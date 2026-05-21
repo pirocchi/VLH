@@ -7,26 +7,25 @@ import {
   Coins, ArrowUpRight, Target, Flame, ChevronUp, ChevronDown
 } from "lucide-react";
 
-// --- サブコンポーネント: 独立浮遊する、文字が大きくて目に優しい「新・小島」KPI ---
-const VLHKPICard = ({ title, value, unit, icon: Icon, colorClass, isLight }: any) => (
+// --- サブコンポーネント: 指標名が大きく、単位が値と完全合体した目に優しい「新・小島」 ---
+const VLHKPICard = ({ title, value, icon: Icon, colorClass, isLight }: any) => (
   <div className={`
     ${isLight ? "bg-white border-slate-200/80 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
-    p-6 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border
+    p-6 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
   `}>
     <div className="flex justify-between items-start">
-      <span className={`text-xs font-black tracking-wider uppercase ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+      {/* 💡 改善：指標名を大きく、現場の日本語が網膜に一撃で刺さるサイズへ */}
+      <span className={`text-sm font-black tracking-wider ${isLight ? "text-slate-800" : "text-slate-200"}`}>
         {title}
       </span>
-      <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass}`}>
+      <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}>
         <Icon size={16} />
       </div>
     </div>
-    <div className="mt-4 flex items-end gap-1.5">
-      <span className={`text-3xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
+    <div className="mt-4">
+      {/* 💡 改善：余計な右側単位を省き、値と単位（回・件・￥・％）を完全融合 */}
+      <span className={`text-3xl font-black tracking-tight block ${isLight ? "text-slate-900" : "text-white"}`}>
         {value}
-      </span>
-      <span className={`text-xs font-extrabold mb-1 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-        {unit}
       </span>
     </div>
   </div>
@@ -158,7 +157,7 @@ export default function VLHDashboardPage() {
     };
   }, [filteredData]);
 
-  // 💡 ASPパフォーマンスマトリクス + 列ソート
+  // 💡 ASPパフォーマンスマトリクス + 列ソート（全11指標完全解放版）
   const aspPerformance = useMemo(() => {
     const asps: any = {};
     filteredData.forEach(row => {
@@ -200,16 +199,15 @@ export default function VLHDashboardPage() {
 
   const renderSortIcon = (key: string) => {
     if (aspSortKey !== key) return null;
-    return aspSortAsc ? <ChevronUp size={14} className="inline ml-0.5" /> : <ChevronDown size={14} className="inline ml-0.5" />;
+    return aspSortAsc ? <ChevronUp size={12} className="inline ml-0.5" /> : <ChevronDown size={12} className="inline ml-0.5" />;
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg">レイアウト最適化パルス展開中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg">視覚同期プロトコル実行中...</div>;
 
   return (
-    // 💡 改善：ライトモード時は「優しい薄グレー(bg-slate-100)」、ダークモード時は「深すぎないスレート」へ完全調停！
     <div className={`min-h-screen w-full font-sans p-4 sm:p-6 transition-all duration-500 ${isLight ? "bg-slate-100 text-slate-800" : "bg-[#0f172a] text-slate-100"}`}>
       
-      {/* 👑 ヘッダーの小島：日本語ローカライズ完了 */}
+      {/* 👑 ヘッダーの小島：日本語正式換装モデル */}
       <header className={`px-8 py-5 mb-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 border ${isLight ? "bg-white border-transparent text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-3">
           <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-black text-sm tracking-wider">VLH</div>
@@ -224,7 +222,7 @@ export default function VLHDashboardPage() {
         </div>
       </header>
 
-      {/* 🛠️ コントロールパネル：視認性大幅向上 */}
+      {/* 🛠️ コントロールパネル */}
       <div className="mb-5">
         <div className={`p-6 rounded-2xl border flex flex-col gap-5 ${isLight ? "bg-white border-transparent text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-lg"}`}>
           
@@ -311,51 +309,51 @@ export default function VLHDashboardPage() {
       {/* 🚀 メインコンテンツ */}
       <div className="space-y-6">
         
-        {/* 🏔️ 改善：11連カードを完全2段組へ大増築！文字サイズを熟練仕様へスケールアップ */}
+        {/* 🏔️ 11連指標カード：日本語表記・縦並び・単位完全統合モデル */}
         <div className="space-y-4">
-          {/* 上段：基礎5指標 */}
           <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase">■ 基礎成果セクション</div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <VLHKPICard title="インプレッション" value={summary.impressions.toLocaleString()} unit="IMP" icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
-            <VLHKPICard title="総クリック数" value={summary.clicks.toLocaleString()} unit="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
-            <VLHKPICard title="平均誘導率" value={`${summary.ctr}%`} unit="CTR" icon={Percent} colorClass="text-purple-500 bg-purple-500" isLight={isLight} />
-            <VLHKPICard title="発生成果数" value={summary.issued_count.toLocaleString()} unit="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" isLight={isLight} />
-            <VLHKPICard title="平均成約率" value={`${summary.cvr}%`} unit="CVR" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
+            <VLHKPICard title="インプレッション数" value={`${summary.impressions.toLocaleString()}回`} icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
+            <VLHKPICard title="クリック数" value={`${summary.clicks.toLocaleString()}回`} icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
+            <VLHKPICard title="クリック率" value={`${summary.ctr}％`} icon={Percent} colorClass="text-purple-500 bg-purple-500" isLight={isLight} />
+            <VLHKPICard title="コンバージョン数" value={`${summary.issued_count.toLocaleString()}件`} icon={ShoppingBag} colorClass="text-green-500 bg-green-500" isLight={isLight} />
+            <VLHKPICard title="コンバージョン率" value={`${summary.cvr}％`} icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
           </div>
 
-          {/* 下段：運用型6指標 */}
           <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <VLHKPICard title="総発生報酬 (コスト)" value={`¥${Math.round(summary.issued_reward).toLocaleString()}`} unit="円" icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
-            <VLHKPICard title="広告経由売上" value={`¥${summary.revenue.toLocaleString()}`} unit="円" icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
-            <VLHKPICard title="絶対ROAS" value={`${summary.roas}%`} unit="ROAS" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
-            <VLHKPICard title="獲得単価 (CPA)" value={`¥${summary.cpa.toLocaleString()}`} unit="円" icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
-            <VLHKPICard title="クリック単価 (CPC)" value={`¥${summary.cpc}`} unit="円" icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
-            <VLHKPICard title="1000回露出コスト (CPM)" value={`¥${summary.cpm}`} unit="円" icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
+            <VLHKPICard title="報酬額" value={`￥${Math.round(summary.issued_reward).toLocaleString()}`} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
+            <VLHKPICard title="売上" value={`￥${summary.revenue.toLocaleString()}`} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
+            <VLHKPICard title="ROAS" value={`${summary.roas}％`} icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
+            <VLHKPICard title="CPM" value={`￥${summary.cpm.toLocaleString()}`} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
+            <VLHKPICard title="CPC" value={`￥${summary.cpc.toLocaleString()}`} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
+            <VLHKPICard title="CPA" value={`￥${summary.cpa.toLocaleString()}`} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
           </div>
         </div>
 
         {/* 下部テーブル＆ランキング構造 */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           
-          {/* 📊 ASP別パフォーマンス・レポート（文字サイズを通常化・ヘッダー強化） */}
+          {/* 📊 ASP別パフォーマンス・レポート：指標名を11大指標と100%完全同期・全11列フルスペック化 */}
           <div className={`xl:col-span-2 border rounded-2xl p-6 overflow-hidden ${isLight ? "bg-white border-transparent text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
             <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}>
-              <BarChart3 size={14} className="text-indigo-500" /> ASP別パフォーマンス・レポート <span className="text-xs text-slate-400 font-normal normal-case">(※タイトルをクリックして並び替え)</span>
+              <BarChart3 size={14} className="text-indigo-500" /> ASP別パフォーマンス・レポート <span className="text-xs text-slate-400 font-normal normal-case">(※列名クリックで双方向ソート)</span>
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs md:text-sm">
+              <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                 <thead>
                   <tr className={`border-b ${isLight ? "border-slate-200 text-slate-500" : "border-slate-700 text-slate-400"} font-black uppercase select-none cursor-pointer`}>
                     <th className="pb-3 text-left hover:text-indigo-500" onClick={() => handleAspSort("name")}>ASP {renderSortIcon("name")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("impressions")}>インプ {renderSortIcon("impressions")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("clicks")}>クリック {renderSortIcon("clicks")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("ctr")}>誘導率 {renderSortIcon("ctr")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("issued")}>成果 {renderSortIcon("issued")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("cvr")}>成約率 {renderSortIcon("cvr")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("reward")}>コスト {renderSortIcon("reward")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("impressions")}>インプレッション数 {renderSortIcon("impressions")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("clicks")}>クリック数 {renderSortIcon("clicks")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("ctr")}>クリック率 {renderSortIcon("ctr")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("issued")}>コンバージョン数 {renderSortIcon("issued")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("cvr")}>コンバージョン率 {renderSortIcon("cvr")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("reward")}>報酬額 {renderSortIcon("reward")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("revenue")}>売上 {renderSortIcon("revenue")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("roas")}>ROAS {renderSortIcon("roas")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("cpm")}>CPM {renderSortIcon("cpm")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("cpc")}>CPC {renderSortIcon("cpc")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("cpa")}>CPA {renderSortIcon("cpa")}</th>
                   </tr>
                 </thead>
@@ -365,15 +363,17 @@ export default function VLHDashboardPage() {
                       <td className={`py-4 font-black ${isLight ? "text-slate-900" : "text-white"} flex items-center gap-2`}>
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}
                       </td>
-                      <td className="py-4 text-right opacity-80">{asp.impressions.toLocaleString()}</td>
-                      <td className="py-4 text-right">{asp.clicks.toLocaleString()}</td>
-                      <td className="py-4 text-right text-purple-500">{asp.ctr}%</td>
-                      <td className="py-4 text-right text-green-500">{asp.issued}</td>
-                      <td className="py-4 text-right text-teal-500">{asp.cvr}%</td>
-                      <td className="py-4 text-right text-red-500">¥{Math.round(asp.reward).toLocaleString()}</td>
-                      <td className="py-4 text-right text-emerald-500">¥{asp.revenue.toLocaleString()}</td>
-                      <td className="py-4 text-right text-yellow-500 font-black text-xs md:text-sm">{asp.roas}%</td>
-                      <td className="py-4 text-right text-pink-500">¥{asp.cpa.toLocaleString()}</td>
+                      <td className="py-4 text-right opacity-80">{asp.impressions.toLocaleString()}回</td>
+                      <td className="py-4 text-right">{asp.clicks.toLocaleString()}回</td>
+                      <td className="py-4 text-right text-purple-500">{asp.ctr}％</td>
+                      <td className="py-4 text-right text-green-500">{asp.issued}件</td>
+                      <td className="py-4 text-right text-teal-500">{asp.cvr}％</td>
+                      <td className="py-4 text-right text-red-500">￥{Math.round(asp.reward).toLocaleString()}</td>
+                      <td className="py-4 text-right text-emerald-500">￥{asp.revenue.toLocaleString()}</td>
+                      <td className="py-4 text-right text-yellow-500 font-black">{asp.roas}％</td>
+                      <td className="py-4 text-right text-indigo-400">￥{asp.cpm.toLocaleString()}</td>
+                      <td className="py-4 text-right text-cyan-500">￥{asp.cpc.toLocaleString()}</td>
+                      <td className="py-4 text-right text-pink-500">￥{asp.cpa.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -381,7 +381,7 @@ export default function VLHDashboardPage() {
             </div>
           </div>
 
-          {/* 🏔️ パートナー別効率ランキング（フォント拡大・右側エリア完全防衛） */}
+          {/* 🏔️ パートナー別効率ランキング：メディア名拡大 ＆ ASP表記をレポートと完全同期 */}
           <div className={`border rounded-2xl p-6 overflow-hidden ${isLight ? "bg-white border-transparent text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
             <div className="flex flex-col gap-3 mb-5">
               <h3 className={`text-xs font-black flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}>
@@ -390,8 +390,8 @@ export default function VLHDashboardPage() {
               
               <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black ${isLight ? "bg-slate-100 border-slate-200" : "bg-[#0f172a] border-slate-800"}`}>
                 {[
-                  { k: "impressions", l: "IMP" }, { k: "clicks", l: "クリック" }, { k: "ctr", l: "CTR" },
-                  { k: "issued_count", l: "CV" }, { k: "cvr", l: "CVR" }, { k: "issued_reward", l: "コスト" },
+                  { k: "impressions", l: "インプ" }, { k: "clicks", l: "クリック" }, { k: "ctr", l: "クリック率" },
+                  { k: "issued_count", l: "成果数" }, { k: "cvr", l: "成約率" }, { k: "issued_reward", l: "報酬額" },
                   { k: "revenue", l: "売上" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" },
                   { k: "cpc", l: "CPC" }, { k: "cpm", l: "CPM" }
                 ].map(btn => (
@@ -415,23 +415,28 @@ export default function VLHDashboardPage() {
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 flex-shrink-0">第 {idx+1} 位</span>
                         <span className="text-xs opacity-60 font-mono">ID:{media.media_id}</span>
                       </div>
-                      <p className={`text-xs md:text-sm font-black truncate mt-2 ${isLight ? "text-slate-900" : "text-white"}`}>{media.media_name}</p>
-                      <p className="text-xs text-slate-400 mt-1 font-black uppercase">{media.asp}</p>
+                      {/* 💡 改善：現場の戦士のためにメディア名をさらに大きく視認性確保 */}
+                      <p className={`text-sm md:text-base font-black truncate mt-2.5 ${isLight ? "text-slate-900" : "text-white"}`}>{media.media_name}</p>
+                      
+                      {/* 💡 改善：ASP名の表記をレポートモジュール（丸ぽちインライン）と完全に同一化 */}
+                      <div className={`py-1 font-black flex items-center gap-1.5 text-xs mt-1 uppercase ${isLight ? "text-slate-700" : "text-slate-300"}`}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{media.asp}
+                      </div>
                     </div>
                     
-                    {/* 右側指標リスト：クリックも含め、全11指標を完全右寄せ整列 */}
-                    <div className="text-right flex-shrink-0 text-xs font-bold space-y-0.5 border-l border-slate-700/20 pl-4 min-w-[90px]">
-                      <p className={mediaSortKey === "impressions" ? "text-blue-500 font-black text-sm" : "text-slate-400"}>{media.impressions.toLocaleString()} IMP</p>
-                      <p className={mediaSortKey === "clicks" ? "text-orange-500 font-black text-sm" : "text-slate-400"}>{media.clicks.toLocaleString()} CLK</p>
-                      <p className={mediaSortKey === "ctr" ? "text-purple-500 font-black text-sm" : "text-slate-400"}>CTR {media.ctr}%</p>
-                      <p className={mediaSortKey === "issued_count" ? "text-green-500 font-black text-sm" : "text-slate-400"}>{media.issued_count} CV</p>
-                      <p className={mediaSortKey === "cvr" ? "text-teal-500 font-black text-sm" : "text-slate-400"}>CVR {media.cvr}%</p>
-                      <p className={mediaSortKey === "issued_reward" ? "text-red-500 font-black text-sm" : "text-slate-400"}>¥{Math.round(media.issued_reward).toLocaleString()}</p>
-                      <p className={mediaSortKey === "revenue" ? "text-emerald-500 font-black text-sm" : "text-slate-400"}>¥{media.revenue.toLocaleString()}</p>
-                      <p className={mediaSortKey === "roas" ? "text-yellow-500 font-black text-sm" : "text-slate-400"}>ROAS {media.roas}%</p>
-                      <p className={mediaSortKey === "cpa" ? "text-pink-500 font-black text-sm" : "text-slate-400"}>CPA ¥{media.cpa.toLocaleString()}</p>
-                      <p className={mediaSortKey === "cpc" ? "text-cyan-500 font-black text-sm" : "text-slate-400"}>CPC ¥{media.cpc}</p>
-                      <p className={mediaSortKey === "cpm" ? "text-indigo-500 font-black text-sm" : "text-slate-400"}>CPM ¥{media.cpm}</p>
+                    {/* 右側指標リスト：表記および単位を11指標と100%完全同期 */}
+                    <div className="text-right flex-shrink-0 text-xs font-black space-y-0.5 border-l border-slate-700/20 pl-4 min-w-[105px]">
+                      <p className={mediaSortKey === "impressions" ? "text-blue-500 text-sm font-black" : "text-slate-400"}>{media.impressions.toLocaleString()}回</p>
+                      <p className={mediaSortKey === "clicks" ? "text-orange-500 text-sm font-black" : "text-slate-400"}>{media.clicks.toLocaleString()}回</p>
+                      <p className={mediaSortKey === "ctr" ? "text-purple-500 text-sm font-black" : "text-slate-400"}>{media.ctr}％</p>
+                      <p className={mediaSortKey === "issued_count" ? "text-green-500 text-sm font-black" : "text-slate-400"}>{media.issued_count}件</p>
+                      <p className={mediaSortKey === "cvr" ? "text-teal-500 text-sm font-black" : "text-slate-400"}>{media.cvr}％</p>
+                      <p className={mediaSortKey === "issued_reward" ? "text-red-500 text-sm font-black" : "text-slate-400"}>￥{Math.round(media.issued_reward).toLocaleString()}</p>
+                      <p className={mediaSortKey === "revenue" ? "text-emerald-500 text-sm font-black" : "text-slate-400"}>￥{media.revenue.toLocaleString()}</p>
+                      <p className={mediaSortKey === "roas" ? "text-yellow-500 text-sm font-black" : "text-slate-400"}>{media.roas}％</p>
+                      <p className={mediaSortKey === "cpa" ? "text-pink-500 text-sm font-black" : "text-slate-400"}>￥{media.cpa.toLocaleString()}</p>
+                      <p className={mediaSortKey === "cpc" ? "text-cyan-500 text-sm font-black" : "text-slate-400"}>￥{media.cpc.toLocaleString()}</p>
+                      <p className={mediaSortKey === "cpm" ? "text-indigo-500 text-sm font-black" : "text-slate-400"}>￥{media.cpm.toLocaleString()}</p>
                     </div>
                   </div>
                 ))
