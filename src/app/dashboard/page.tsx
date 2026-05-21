@@ -14,7 +14,6 @@ const VLHKPICard = ({ title, value, icon: Icon, colorClass, isLight }: any) => (
     p-6 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
   `}>
     <div className="flex justify-between items-start">
-      {/* 💡 改善：指標名を大きく、現場の日本語が網膜に一撃で刺さるサイズへ */}
       <span className={`text-sm font-black tracking-wider ${isLight ? "text-slate-800" : "text-slate-200"}`}>
         {title}
       </span>
@@ -23,7 +22,6 @@ const VLHKPICard = ({ title, value, icon: Icon, colorClass, isLight }: any) => (
       </div>
     </div>
     <div className="mt-4">
-      {/* 💡 改善：余計な右側単位を省き、値と単位（回・件・￥・％）を完全融合 */}
       <span className={`text-3xl font-black tracking-tight block ${isLight ? "text-slate-900" : "text-white"}`}>
         {value}
       </span>
@@ -153,11 +151,11 @@ export default function VLHDashboardPage() {
       roas: totalCost > 0 ? parseFloat(((totalRevenue / totalCost) * 100).toFixed(2)) : 0.0,
       cpa: totalIssued > 0 ? Math.round(totalCost / totalIssued) : 0,
       cpc: totalClicks > 0 ? parseFloat((totalCost / totalClicks).toFixed(2)) : 0.0,
-      cpm: totalImp > 0 ? parseFloat(((totalCost / totalImp) * 1000).toFixed(2)) : 0.0
+      current_cpm: totalImp > 0 ? parseFloat(((totalCost / totalImp) * 1000).toFixed(2)) : 0.0
     };
   }, [filteredData]);
 
-  // 💡 ASPパフォーマンスマトリクス + 列ソート（全11指標完全解放版）
+  // 💡 ASPパフォーマンスマトリクス + 列ソート
   const aspPerformance = useMemo(() => {
     const asps: any = {};
     filteredData.forEach(row => {
@@ -202,12 +200,12 @@ export default function VLHDashboardPage() {
     return aspSortAsc ? <ChevronUp size={12} className="inline ml-0.5" /> : <ChevronDown size={12} className="inline ml-0.5" />;
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg">視覚同期プロトコル実行中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg">端数・大文字バグ完全粉砕中...</div>;
 
   return (
     <div className={`min-h-screen w-full font-sans p-4 sm:p-6 transition-all duration-500 ${isLight ? "bg-slate-100 text-slate-800" : "bg-[#0f172a] text-slate-100"}`}>
       
-      {/* 👑 ヘッダーの小島：日本語正式換装モデル */}
+      {/* 👑 ヘッダーの小島 */}
       <header className={`px-8 py-5 mb-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 border ${isLight ? "bg-white border-transparent text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-3">
           <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-black text-sm tracking-wider">VLH</div>
@@ -309,7 +307,7 @@ export default function VLHDashboardPage() {
       {/* 🚀 メインコンテンツ */}
       <div className="space-y-6">
         
-        {/* 🏔️ 11連指標カード：日本語表記・縦並び・単位完全統合モデル */}
+        {/* 🏔️ 11連指標カード：￥単位の小数点以下を完全排除（Math.round徹底適用） */}
         <div className="space-y-4">
           <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase">■ 基礎成果セクション</div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -322,19 +320,20 @@ export default function VLHDashboardPage() {
 
           <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* 💡 改善：すべての通貨単位指標に Math.round を強制適用し端数を粉砕 */}
             <VLHKPICard title="報酬額" value={`￥${Math.round(summary.issued_reward).toLocaleString()}`} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
-            <VLHKPICard title="売上" value={`￥${summary.revenue.toLocaleString()}`} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
+            <VLHKPICard title="売上" value={`￥${Math.round(summary.revenue).toLocaleString()}`} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
             <VLHKPICard title="ROAS" value={`${summary.roas}％`} icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
-            <VLHKPICard title="CPM" value={`￥${summary.cpm.toLocaleString()}`} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
-            <VLHKPICard title="CPC" value={`￥${summary.cpc.toLocaleString()}`} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
-            <VLHKPICard title="CPA" value={`￥${summary.cpa.toLocaleString()}`} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
+            <VLHKPICard title="CPM" value={`￥${Math.round(summary.current_cpm).toLocaleString()}`} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
+            <VLHKPICard title="CPC" value={`￥${Math.round(summary.cpc).toLocaleString()}`} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
+            <VLHKPICard title="CPA" value={`￥${Math.round(summary.cpa).toLocaleString()}`} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
           </div>
         </div>
 
         {/* 下部テーブル＆ランキング構造 */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           
-          {/* 📊 ASP別パフォーマンス・レポート：指標名を11大指標と100%完全同期・全11列フルスペック化 */}
+          {/* 📊 ASP別パフォーマンス・レポート：通貨単位の小数点以下を完全パージ */}
           <div className={`xl:col-span-2 border rounded-2xl p-6 overflow-hidden ${isLight ? "bg-white border-transparent text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
             <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}>
               <BarChart3 size={14} className="text-indigo-500" /> ASP別パフォーマンス・レポート <span className="text-xs text-slate-400 font-normal normal-case">(※列名クリックで双方向ソート)</span>
@@ -368,12 +367,13 @@ export default function VLHDashboardPage() {
                       <td className="py-4 text-right text-purple-500">{asp.ctr}％</td>
                       <td className="py-4 text-right text-green-500">{asp.issued}件</td>
                       <td className="py-4 text-right text-teal-500">{asp.cvr}％</td>
+                      {/* 💡 改善：テーブル内も Math.round を徹底し、￥表記の小数点以下の残滓を完全消滅 */}
                       <td className="py-4 text-right text-red-500">￥{Math.round(asp.reward).toLocaleString()}</td>
-                      <td className="py-4 text-right text-emerald-500">￥{asp.revenue.toLocaleString()}</td>
+                      <td className="py-4 text-right text-emerald-500">￥{Math.round(asp.revenue).toLocaleString()}</td>
                       <td className="py-4 text-right text-yellow-500 font-black">{asp.roas}％</td>
-                      <td className="py-4 text-right text-indigo-400">￥{asp.cpm.toLocaleString()}</td>
-                      <td className="py-4 text-right text-cyan-500">￥{asp.cpc.toLocaleString()}</td>
-                      <td className="py-4 text-right text-pink-500">￥{asp.cpa.toLocaleString()}</td>
+                      <td className="py-4 text-right text-indigo-400">￥{Math.round(asp.cpm).toLocaleString()}</td>
+                      <td className="py-4 text-right text-cyan-500">￥{Math.round(asp.cpc).toLocaleString()}</td>
+                      <td className="py-4 text-right text-pink-500">￥{Math.round(asp.cpa).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -381,7 +381,7 @@ export default function VLHDashboardPage() {
             </div>
           </div>
 
-          {/* 🏔️ パートナー別効率ランキング：メディア名拡大 ＆ ASP表記をレポートと完全同期 */}
+          {/* 🏔️ パートナー別効率ランキング：正式名称化 ＆ ￥の端数処理 */}
           <div className={`border rounded-2xl p-6 overflow-hidden ${isLight ? "bg-white border-transparent text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
             <div className="flex flex-col gap-3 mb-5">
               <h3 className={`text-xs font-black flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}>
@@ -415,28 +415,29 @@ export default function VLHDashboardPage() {
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 flex-shrink-0">第 {idx+1} 位</span>
                         <span className="text-xs opacity-60 font-mono">ID:{media.media_id}</span>
                       </div>
-                      {/* 💡 改善：現場の戦士のためにメディア名をさらに大きく視認性確保 */}
-                      <p className={`text-sm md:text-base font-black truncate mt-2.5 ${isLight ? "text-slate-900" : "text-white"}`}>{media.media_name}</p>
+                      <p className={`text-base font-black truncate mt-2.5 ${isLight ? "text-slate-900" : "text-white"}`}>{media.media_name}</p>
                       
-                      {/* 💡 改善：ASP名の表記をレポートモジュール（丸ぽちインライン）と完全に同一化 */}
-                      <div className={`py-1 font-black flex items-center gap-1.5 text-xs mt-1 uppercase ${isLight ? "text-slate-700" : "text-slate-300"}`}>
+                      {/* 💡 改善：uppercaseを完全パージ！左側の表と100%同じく、頭に青丸を配した「正式名称」で出力 */}
+                      <div className={`py-1 font-black flex items-center gap-1.5 text-xs mt-1 ${isLight ? "text-slate-700" : "text-slate-300"}`}>
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{media.asp}
                       </div>
                     </div>
                     
-                    {/* 右側指標リスト：表記および単位を11指標と100%完全同期 */}
+                    {/* 右側指標リスト：￥マーク指標の小数点以下を完全パージ */}
                     <div className="text-right flex-shrink-0 text-xs font-black space-y-0.5 border-l border-slate-700/20 pl-4 min-w-[105px]">
                       <p className={mediaSortKey === "impressions" ? "text-blue-500 text-sm font-black" : "text-slate-400"}>{media.impressions.toLocaleString()}回</p>
                       <p className={mediaSortKey === "clicks" ? "text-orange-500 text-sm font-black" : "text-slate-400"}>{media.clicks.toLocaleString()}回</p>
                       <p className={mediaSortKey === "ctr" ? "text-purple-500 text-sm font-black" : "text-slate-400"}>{media.ctr}％</p>
                       <p className={mediaSortKey === "issued_count" ? "text-green-500 text-sm font-black" : "text-slate-400"}>{media.issued_count}件</p>
                       <p className={mediaSortKey === "cvr" ? "text-teal-500 text-sm font-black" : "text-slate-400"}>{media.cvr}％</p>
+                      
+                      {/* 💡 改善：ランキング右側のすべての通貨指標にも Math.round を一挙装填 */}
                       <p className={mediaSortKey === "issued_reward" ? "text-red-500 text-sm font-black" : "text-slate-400"}>￥{Math.round(media.issued_reward).toLocaleString()}</p>
-                      <p className={mediaSortKey === "revenue" ? "text-emerald-500 text-sm font-black" : "text-slate-400"}>￥{media.revenue.toLocaleString()}</p>
+                      <p className={mediaSortKey === "revenue" ? "text-emerald-500 text-sm font-black" : "text-slate-400"}>￥{Math.round(media.revenue).toLocaleString()}</p>
                       <p className={mediaSortKey === "roas" ? "text-yellow-500 text-sm font-black" : "text-slate-400"}>{media.roas}％</p>
-                      <p className={mediaSortKey === "cpa" ? "text-pink-500 text-sm font-black" : "text-slate-400"}>￥{media.cpa.toLocaleString()}</p>
-                      <p className={mediaSortKey === "cpc" ? "text-cyan-500 text-sm font-black" : "text-slate-400"}>￥{media.cpc.toLocaleString()}</p>
-                      <p className={mediaSortKey === "cpm" ? "text-indigo-500 text-sm font-black" : "text-slate-400"}>￥{media.cpm.toLocaleString()}</p>
+                      <p className={mediaSortKey === "cpa" ? "text-pink-500 text-sm font-black" : "text-slate-400"}>￥{Math.round(media.cpa).toLocaleString()}</p>
+                      <p className={mediaSortKey === "cpc" ? "text-cyan-500 text-sm font-black" : "text-slate-400"}>￥{Math.round(media.cpc).toLocaleString()}</p>
+                      <p className={mediaSortKey === "cpm" ? "text-indigo-500 text-sm font-black" : "text-slate-400"}>￥{Math.round(media.cpm).toLocaleString()}</p>
                     </div>
                   </div>
                 ))
