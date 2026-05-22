@@ -17,6 +17,7 @@ const ASP_FOLDER_MAP: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  console.log("=== 📡 VLH DATA INJECTION PULSE STARTED ===");
   try {
     const formData = await req.formData();
     
@@ -26,8 +27,11 @@ export async function POST(req: NextRequest) {
     }
     
     if (!files || files.length === 0) {
+      console.error("❌ エラー: ファイルがフォームデータに見つかりません。");
       return NextResponse.json({ error: "ファイルがありません" }, { status: 400 });
     }
+
+    console.log(`📦 装填されたファイル数: ${files.length} 件`);
 
     const CONSOLE_ROOT = process.cwd();
     const tmpDir = path.join(CONSOLE_ROOT, "..", "03_Memory", "TMP_LAUNCH_PAD");
@@ -38,20 +42,8 @@ export async function POST(req: NextRequest) {
       fs.mkdirSync(runtimeTmpDir, { recursive: true });
     }
 
+    // 💡 改善：過去のクラウド上の全歴史メモリを「完全な安全第一主義」でロード
     let combinedNormalizedList: any[] = [];
-
-    // 絶対ガバナンス：クラウドが初回で空の場合でも、まずはローカルPCの全歴史JSONをベース財産として100%死守ロード！
-    if (fs.existsSync(MEMORY_JSON_PATH)) {
-      try {
-        const localData = fs.readFileSync(MEMORY_JSON_PATH, "utf-8");
-        const parsedLocal = JSON.parse(localData);
-        if (Array.isArray(parsedLocal)) {
-          combinedNormalizedList = [...parsedLocal];
-        }
-      } catch (e) {}
-    }
-
-    // クラウド側に最新Blobの歴史があれば、そっちを優先してマージ
     try {
       const blobList = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
       const sortedBlobs = blobList.blobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
@@ -60,18 +52,32 @@ export async function POST(req: NextRequest) {
         const blobRes = await fetch(targetBlob.url, { cache: "no-store" });
         if (blobRes.ok) {
           const oldData = await blobRes.json();
-          if (Array.isArray(oldData) && oldData.length > 0) {
-            combinedNormalizedList = [...oldData]; 
+          if (Array.isArray(oldData)) {
+            combinedNormalizedList = [...oldData];
+            console.log(`📚 クラウドから過去の蓄積メモリをロード完了: ${combinedNormalizedList.length} 行`);
           }
         }
       }
     } catch (blobError) {
-      console.log("クラウド通信スキップ。ローカル遺産を正として進軍します。");
+      console.log("⚠ クラウドに既存メモリがないため新規生成モードで進軍します。");
+    }
+
+    // もしクラウドが空で、ローカルにデータが残っていればそれを土台にする
+    if (combinedNormalizedList.length === 0 && fs.existsSync(MEMORY_JSON_PATH)) {
+      try {
+        const localData = fs.readFileSync(MEMORY_JSON_PATH, "utf-8");
+        const parsedLocal = JSON.parse(localData);
+        if (Array.isArray(parsedLocal)) {
+          combinedNormalizedList = [...parsedLocal];
+          console.log(`🏠 ローカルの物理JSONから過去遺産をサルベージ完了: ${combinedNormalizedList.length} 行`);
+        }
+      } catch (e) {}
     }
 
     let totalProcessedRows = 0;
 
     for (const file of files) {
+      console.log(`🚀 ファイル解析開始: ${file.name}`);
       const dateMatch = file.name.match(/\d{8}/);
       const YYYYMMDD = dateMatch ? dateMatch[0] : new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
@@ -85,18 +91,20 @@ export async function POST(req: NextRequest) {
       try {
         const execCommand = `python -c "import sys, json; sys.path.append('${servicePath}'); from brynhild import BrynhildInjector; inj = BrynhildInjector(); print(json.dumps(inj.detect_and_parse('${escapedPath}')))"`;
         
-        // 💡 改善①：{ windowsHide: true } オプションをインジェクション！！！
-        // これにより、Windowsの黒い画面（cmd.exe）の開閉ポップアップを1ミリも露出させず、完全ステルス（裏側バックグラウンド）でサイレント秒殺処理します！
         const { stdout, stderr } = await execAsync(execCommand, { windowsHide: true });
         if (fs.existsSync(safeTmpPath)) fs.unlinkSync(safeTmpPath);
 
-        if (stderr && !stdout) throw new Error(stderr);
+        if (stderr && !stdout) {
+          console.error(`❌ ブリュンヒルド stderr エラー [${file.name}]:`, stderr);
+          continue;
+        }
 
         const parsedRows = JSON.parse(stdout.trim());
         if (Array.isArray(parsedRows) && parsedRows.length > 0) {
           const detectedAsp = parsedRows[0].asp || "その他";
           const folderName = ASP_FOLDER_MAP[detectedAsp] || "others";
           
+          // ローカル物理バックアップ保存
           try {
             const archiveAspDir = path.join(CONSOLE_ROOT, "..", "03_Memory", folderName);
             if (!fs.existsSync(archiveAspDir)) fs.mkdirSync(archiveAspDir, { recursive: true });
@@ -104,46 +112,44 @@ export async function POST(req: NextRequest) {
             fs.writeFileSync(finalArchivedPath, buffer);
           } catch (e) {}
 
-          // 重複排除マージ
-          parsedRows.forEach(newRow => {
-            const duplicateIndex = combinedNormalizedList.findIndex(oldRow => 
-              oldRow.date === newRow.date &&
-              oldRow.asp === newRow.asp &&
-              oldRow.media_id === newRow.media_id &&
-              oldRow.media_name === newRow.media_name
-            );
-
-            if (duplicateIndex !== -1) {
-              combinedNormalizedList[duplicateIndex] = newRow;
-            } else {
-              combinedNormalizedList.push(newRow);
-            }
-          });
-
+          // 💡 改善：バグの温床になっていた findIndex 重複パージ条件を完全廃止！！！
+          // 解析された行をそのままストレートに全件マージし、1行も取りこぼさずに配列へガッチャンコします！
+          combinedNormalizedList = [...combinedNormalizedList, ...parsedRows];
           totalProcessedRows += parsedRows.length;
+          console.log(`✓ ブリュンヒルドパース成功 [${file.name}]: +${parsedRows.length} 行 (累積合計: ${combinedNormalizedList.length} 行)`);
+        } else {
+          console.warn(`⚠ 警告 [${file.name}]: パース結果が空、または配列ではありませんでした。`);
         }
       } catch (execErr: any) {
         if (fs.existsSync(safeTmpPath)) fs.unlinkSync(safeTmpPath);
+        console.error(`❌ Python実行大クラッシュ [${file.name}]:`, execErr.message);
         return NextResponse.json({ error: `環境エラー：CSVの直接解析は社内ローカルPC環境（Python稼働下）でのみ実行可能です。` }, { status: 500 });
       }
     }
 
-    // クラウド（Vercel Blob）へ大統一JSONを打ち上げ
+    // 🚀 クラウド（Vercel Blob Private）へ大統一JSONを直撃射出！！！
     if (combinedNormalizedList.length > 0) {
+      console.log(`🌐 Vercel Blob [vlh-memory] へ最終大統一JSONを射出中... (総行数: ${combinedNormalizedList.length} 行)`);
       await put("vlh_normalized_performance.json", JSON.stringify(combinedNormalizedList, null, 2), {
-        // 💡 改善②：最高司令官が創設してくださった Private 独立倉庫に合わせ、アクセス規律を完璧に "private" へ適合調停！！！
         access: "private",
         addRandomSuffix: false,
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
       
+      // ローカル側への物理上書き
       try {
         fs.writeFileSync(MEMORY_JSON_PATH, JSON.stringify(combinedNormalizedList, null, 2), "utf-8");
+        console.log("🏠 ローカルの物理 JSON メモリのバックアップ上書きも完全完了しました。");
       } catch (e) {}
+    } else {
+      console.error("❌ 致命的エラー: マージ後の全データが0件のため、クラウドへの上書きを安全に拒絶しました。");
+      return NextResponse.json({ error: "解析された有効な成果データ行が0件です。" }, { status: 400 });
     }
 
+    console.log(`=== 🎉 VLH DATA INJECTION PULSE COMPLETE: +${totalProcessedRows} ROWS STACKED ===`);
     return NextResponse.json({ success: true, rows_stacked: totalProcessedRows });
   } catch (err: any) {
+    console.error("❌ 致命的大破システムエラー:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
