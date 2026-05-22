@@ -3,41 +3,31 @@ import fs from "fs";
 import path from "path";
 import { put, list, del } from "@vercel/blob";
 
-// 💡 宇宙絶対規律：Next.jsの全キャッシュ機構を根底から物理的に全パージ
+// 💡 宇宙絶対規律：APIが静的コンパイルの檻に閉じ込められるのを100%永久パージ！！！
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-// 💡 規律：社内PC（ローカル環境）での物理パス
+// 💡 規律：社内PC（ローカル環境）でのPython側のMIMIR（03_Memory）の絶対座標
 const dictPath = path.join(process.cwd(), "..", "03_Memory", "mimir_dictionary.json");
-
-// 💡 規律：前方一致で手動ファイルも乱数付きファイルも確実に巻き取るための検索プレフィックス
-const BLOB_SEARCH_PREFIX = "mimir_dictionary";
 const BLOB_FILENAME = "mimir_dictionary.json";
-
-// 📡 Vercelのインフラ上で動いている時だけ確実にtrueになる一撃判定
-const isCloud = process.env.VERCEL === "1";
-
-const ensureDirectoryExists = (filePath: string) => {
-  const dirname = path.dirname(filePath);
-  if (!fs.existsSync(dirname)) {
-    fs.mkdirSync(dirname, { recursive: true });
-  }
-};
 
 // 辞書データのサルベージ（読み込み）
 export async function GET() {
   try {
-    // 🌐 クラウド環境、かつVercel Blobのトークンが生存している場合のみストレージをスキャン
-    if (isCloud && process.env.BLOB_READ_WRITE_TOKEN) {
-      const { blobs } = await list();
-      
-      // 💡 改善：".json" を除外したプレフィックスで判定し、手動アップロードファイルも乱数付きも100%全捕捉！！！
-      const dictBlobs = blobs.filter(b => b.pathname.startsWith(BLOB_SEARCH_PREFIX));
+    // 核心：判定をすべて関数内部（ランタイム）へ移動！！！ビルド時の環境変数固定化の呪いを完全粉砕！！！
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const isCloudEnv = process.env.VERCEL === "1" || !!token;
+
+    if (isCloudEnv && token) {
+      // 🌐 クラウドランタイム：トークンを明示的に装填してBlobストレージをスキャン！
+      const { blobs } = await list({ token });
+      const dictBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary"));
 
       if (dictBlobs.length > 0) {
-        // アップロード日時が最も新しいデータを最優先ソート
+        // アップロード日時が最も新しい純度100%のデータを最優先ソート
         dictBlobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+        
         const res = await fetch(dictBlobs[0].url, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
@@ -45,14 +35,13 @@ export async function GET() {
         }
       }
     }
-    
-    // 🏠 ローカル環境、またはクラウド側でTokenがまだ未設定の時の安全なフォールバック
-    // 外部通信に依存せず、常に手元の物理ファイルを最速スキャンするため絶対に画面がフリーズしません
+
+    // 🏠 ローカルランタイム：外部通信に1ミリも依存せず、PC内の物理ディスクを安全スキャン！
     if (fs.existsSync(dictPath)) {
       const data = fs.readFileSync(dictPath, "utf-8");
       return NextResponse.json(JSON.parse(data));
     }
-    
+
     return NextResponse.json({ master_partners: [] });
   } catch (error) {
     console.error("🚨 Dictionary GET Error:", error);
@@ -66,27 +55,34 @@ export async function POST(request: Request) {
     const body = await request.json();
     const jsonString = JSON.stringify(body, null, 2);
 
-    // 🌐 クラウド環境、かつトークン生存時のみBlobへ直接保存
-    if (isCloud && process.env.BLOB_READ_WRITE_TOKEN) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const isCloudEnv = process.env.VERCEL === "1" || !!token;
+
+    if (isCloudEnv && token) {
+      // 🌐 クラウドランタイム：URLを毎回変動させてCDNキャッシュを強制大破させつつ、Blobへ直接上書き保存！
       const blob = await put(BLOB_FILENAME, jsonString, {
         access: "public",
         addRandomSuffix: true,
         contentType: "application/json",
+        token
       });
 
-      // 古い残骸の掃討
+      // 過去の乱数付き残骸ファイルをバックグラウンドで一斉掃討
       try {
-        const { blobs } = await list();
-        const oldBlobs = blobs.filter(b => b.pathname.startsWith(BLOB_SEARCH_PREFIX) && b.url !== blob.url);
+        const { blobs } = await list({ token });
+        const oldBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary") && b.url !== blob.url);
         if (oldBlobs.length > 0) {
-          await del(oldBlobs.map(b => b.url));
+          await del(oldBlobs.map(b => b.url), { token });
         }
-      } catch (e) { /* 残骸パージエラーは安全にスルー */ }
+      } catch (e) { /* 安全にスルー */ }
 
       return NextResponse.json({ success: true, url: blob.url });
     } else {
-      // 🏠 ローカルPC環境：確実に03_Memoryの物理ディスクへ即時永続書き込み
-      ensureDirectoryExists(dictPath);
+      // 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み！
+      const dirname = path.dirname(dictPath);
+      if (!fs.existsSync(dirname)) {
+        fs.mkdirSync(dirname, { recursive: true });
+      }
       fs.writeFileSync(dictPath, jsonString, "utf-8");
       return NextResponse.json({ success: true });
     }
