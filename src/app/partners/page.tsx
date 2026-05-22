@@ -5,7 +5,7 @@ import { ThemeContext } from "../layout";
 import { 
   Users, Eye, MousePointer, Percent, ShoppingBag, TrendingUp,
   DollarSign, ArrowUpRight, Flame, Target, Coins, BarChart3,
-  Search, ShieldAlert, Layers
+  Search, ShieldAlert, Layers, Filter
 } from "lucide-react";
 
 // --- サブコンポーネント: レスポンシブKPIカード ---
@@ -31,22 +31,22 @@ export default function VLHPartnersPage() {
   const isLight = activeTheme === "light";
 
   const [performanceData, setPerformanceData] = useState<any[]>([]);
-  // 💡 改善：手動紐付け辞書をストックする新ステート
   const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
+  
   const [searchWord, setSearchWord] = useState<string>("",);
-  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
+  // 💡 改善：新ステート「選択中のASPフィルター」を兵籍登録！
+  const [selectedAsp, setSelectedAsp] = useState<string>("all");
+  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("",);
 
-  // 📡 RAWデータ ＆ 手動紐付け辞書のダブル・サルベージ
+  // 📡 RAWデータ ＆ 紐付け辞書のダブル・サルベージ
   useEffect(() => {
     const initializeData = async () => {
       try {
         setLoading(true);
-        // 1. パフォーマンス成果データの抽出
         const perfRes = await fetch("/api/performance", { cache: "no-store" });
         const perfData = perfRes.ok ? await perfRes.json() : [];
         
-        // 2. 秘密倉庫（辞書）からの手動紐付けルールの抽出
         const dictRes = await fetch("/api/dictionary", { cache: "no-store" });
         const dictionary = dictRes.ok ? await dictRes.json() : { master_partners: [] };
 
@@ -61,7 +61,7 @@ export default function VLHPartnersPage() {
     initializeData();
   }, []);
 
-  // 🔍 核心：手動紐付け辞書（MIMIRの意思）を噛ませた超名寄せ演算マトリクス
+  // 🔍 パートナー（メディア名）単位への名寄せ演算マトリクス
   const partnersAggregated = useMemo(() => {
     const map: any = {};
 
@@ -70,13 +70,11 @@ export default function VLHPartnersPage() {
       const rawId = row.media_id || "N/A";
       if (!rawName || rawName === "日別レポート") return; 
 
-      // 💡 改善：手動紐付け辞書に登録があるか、名前とIDで徹底検閲
       let finalName = rawName;
       const match = dictData.master_partners?.find((entry: any) => 
         entry.aliases?.includes(rawName) || entry.aliases?.includes(rawId)
       );
       
-      // もし福本様の手動紐付けルールに合致したら、その指定グループ名（real_name）へ強制的に名寄せ収束！
       if (match) {
         finalName = match.real_name;
       }
@@ -126,12 +124,19 @@ export default function VLHPartnersPage() {
     }).sort((a: any, b: any) => b.revenue - a.revenue);
   }, [performanceData, dictData]);
 
+  // 💡 改善：検索ワード ＆ ASP所属状態 の二重検閲マトリクスフィルター！
   const searchedPartners = useMemo(() => {
-    return partnersAggregated.filter(p => 
-      p.name.toLowerCase().includes(searchWord.toLowerCase()) || 
-      p.idList.toLowerCase().includes(searchWord.toLowerCase())
-    );
-  }, [partnersAggregated, searchWord]);
+    return partnersAggregated.filter(p => {
+      // 1. キーワード検閲（名前、または紐付けID）
+      const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || 
+                          p.idList.toLowerCase().includes(searchWord.toLowerCase());
+      
+      // 2. ASP所属検閲（指定のASPに実績が含まれているか）
+      const matchesAsp = selectedAsp === "all" || Object.keys(p.asps).includes(selectedAsp);
+      
+      return matchesWord && matchesAsp;
+    });
+  }, [partnersAggregated, searchWord, selectedAsp]);
 
   const currentPartner = useMemo(() => {
     if (searchedPartners.length === 0) return null;
@@ -172,11 +177,29 @@ export default function VLHPartnersPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* 左翼：検索リスト */}
+        {/* 🗺️ 左翼：アフィリエイター検索・選択用マスター島 */}
         <div className={`p-5 rounded-2xl border shadow-md h-fit ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white"}`}>
           <div className="flex items-center gap-2 mb-4">
             <Search size={16} className="text-indigo-500" />
             <span className="text-sm font-black tracking-wider">パートナー検索</span>
+          </div>
+
+          {/* 💡 改善：ASPの絞り込み用セレクトボックスをインライン強制インジェクション！ */}
+          <div className="mb-3 flex items-center gap-2">
+            <Filter size={12} className="text-slate-400 flex-shrink-0" />
+            <select 
+              value={selectedAsp} 
+              onChange={(e) => setSelectedAsp(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl text-xs font-black border bg-slate-50 border-slate-300 text-slate-800 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white outline-none"
+            >
+              <option value="all">すべての出撃ASP</option>
+              <option value="A8.net">A8.net</option>
+              <option value="afb">afb</option>
+              <option value="AccessTrade">AccessTrade</option>
+              <option value="felmat">felmat</option>
+              <option value="もしもアフィリエイト">もしもアフィリエイト</option>
+              <option value="QUORIZa">QUORIZa</option>
+            </select>
           </div>
           
           <input 
@@ -184,10 +207,10 @@ export default function VLHPartnersPage() {
             placeholder="メディア名・IDを入力..."
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
-            className="px-4 py-2.5 rounded-xl text-sm w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
+            className="px-4 py-2.5 rounded-xl text-xs w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
           />
 
-          <div className="border-t border-slate-700/10 pt-3 max-h-[550px] overflow-y-auto space-y-1.5 pr-1">
+          <div className="border-t border-slate-700/10 pt-3 max-h-[500px] overflow-y-auto space-y-1.5 pr-1">
             {searchedPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
@@ -204,10 +227,13 @@ export default function VLHPartnersPage() {
                 </div>
               );
             })}
+            {searchedPartners.length === 0 && (
+              <div className="text-center py-8 text-slate-500 text-xs font-bold">該当パートナー不在</div>
+            )}
           </div>
         </div>
 
-        {/* 右翼：11大指標 */}
+        {/* 🏔 * / 右翼：11大指標コックピット */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
@@ -244,7 +270,6 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* ASP内訳テーブル */}
               <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
                   <Layers size={14} className="text-indigo-500" /> 出撃ASPチャンネル別・内訳レポート
@@ -288,7 +313,7 @@ export default function VLHPartnersPage() {
           ) : (
             <div className="text-center py-20 text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-800 rounded-3xl">
               <ShieldAlert size={24} className="text-slate-600"/>
-              検索条件に合致するパートナー情報が存在しません。
+              指定のASPフィルターに合致するパートナー情報が存在しません。
             </div>
           )}
         </div>
