@@ -110,7 +110,6 @@ export default function VLHDictionaryPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* 左翼：新規登録カード */}
-        {/* 💡 核心バグ粉砕：stickyを「lg:sticky lg:top-8」へと完全限定！！これでモバイル時の突っ張り棒ロック（島が動かない現象）が2000%消滅します！ */}
         <div className={`p-8 rounded-3xl border h-fit lg:sticky lg:top-8 transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
           <h2 className="text-lg font-black mb-6 flex items-center gap-2">
             <Plus size={20} className="text-indigo-500" /> 新規グループを作成
@@ -119,9 +118,10 @@ export default function VLHDictionaryPage() {
             複数のASPや異なるメディア名で活動しているパートナーを、1つの「まとめ用の名前」で合算するための箱を作成します。
           </p>
           <div className="space-y-4">
+            {/* 💡 改善：最高司令官のお名前「（渡辺）」を宇宙の彼方へパージ完了！純粋なプレースホルダーへ */}
             <input 
               type="text"
-              placeholder="例：お宝脱毛特化ブログ（渡辺）"
+              placeholder="例：お宝脱毛特化ブログ"
               value={newMasterName}
               onChange={(e) => setNewMasterName(e.target.value)}
               className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 dark:bg-[#0f172a] dark:border-slate-700 font-black text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all"

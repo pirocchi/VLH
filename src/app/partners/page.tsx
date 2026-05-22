@@ -200,7 +200,6 @@ export default function VLHPartnersPage() {
             className="px-4 py-2.5 rounded-xl text-xs w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
           />
 
-          {/* 💡 改善：数万件データ対策！モバイル時は h-80（320px）の小窓に閉じ込め、PC大画面では h-[500px] で固定スクロール！一生スクロール地獄を完全消滅 */}
           <div className="border-t border-slate-200 dark:border-slate-700/30 pt-3 h-80 xl:h-[500px] overflow-y-auto space-y-1.5 pr-1">
             {searchedPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
@@ -261,9 +260,10 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
+              {/* 💡 改善：テーブルタイトルからおいたこな「出撃」を永久追放、綺麗な「ASP別内訳レポート」へ完全純化！ */}
               <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
-                  <Layers size={14} className="text-indigo-500" /> 出撃ASPチャンネル別・内訳レポート
+                  <Layers size={14} className="text-indigo-500" /> ASP別内訳レポート
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
