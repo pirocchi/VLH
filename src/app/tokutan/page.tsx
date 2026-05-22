@@ -164,7 +164,7 @@ export default function VLHTokutanPage() {
       // 💡 財務マージンの逆算（特殊の場合は生データをベースに概算）
       let partnerProfit = 0;
       let aspProfit = 0;
-      let自社残し = 0;
+      let 自社残し = 0;
 
       if (isSpecial) {
         partnerProfit = p.rawReward * 0.8; // 特殊時は支払額の8割をメディア分と仮定
