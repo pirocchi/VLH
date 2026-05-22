@@ -5,7 +5,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { 
   Users, Layers, Crown, Upload, 
-  Sun, Moon, Clock, LayoutDashboard, ChevronRight
+  Sun, Moon, Clock, LayoutDashboard, ChevronRight,
+  Menu, X
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,12 +22,13 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   
-  // 💡 規律：ハイドレーション（画面のチラつきや初期化バグ）を防ぐための安全弁
   const [mounted, setMounted] = useState(false);
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
   const [activeTheme, setActiveTheme] = useState<"light" | "dark">("dark");
+  
+  // 💡 規律：モバイル環境でのサイドメニュー開閉ステート
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 1. 【初回マウント時】ブラウザの記憶倉庫から前回の設定をサルベージ
   useEffect(() => {
     setMounted(true);
     const savedMode = localStorage.getItem("vlh-theme-mode") as "light" | "dark" | "auto";
@@ -35,10 +37,8 @@ export default function RootLayout({
     }
   }, []);
 
-  // 2. 【モード変更時】記憶を即座に上書き保存 ＆ 時間軸の冷徹なパース
   useEffect(() => {
     if (!mounted) return;
-    
     localStorage.setItem("vlh-theme-mode", themeMode);
 
     const evaluateTheme = () => {
@@ -55,13 +55,17 @@ export default function RootLayout({
     return () => clearInterval(interval);
   }, [themeMode, mounted]);
 
-  // 3. メイン背景色へのクラス適用
   useEffect(() => {
     if (!mounted) return;
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(activeTheme);
   }, [activeTheme, mounted]);
+
+  // 💡 改善：ページを切り替えたらモバイルメニューを自動で閉じる
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   const isLight = activeTheme === "light";
 
@@ -77,17 +81,39 @@ export default function RootLayout({
     <html lang="ja" className="h-full">
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
-          <div className={`flex h-screen w-full transition-colors duration-500 ${isLight ? "bg-slate-100 text-slate-800" : "bg-[#0f172a] text-slate-100"}`}>
+          
+          {/* 全体コンテナ */}
+          <div className={`flex h-screen w-full transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100`}>
             
-            {/* 🏰 左側の司令塔：共通サイドメニュー・アイランド */}
-            <aside className={`w-72 flex-shrink-0 flex flex-col border-r transition-all duration-500 ${isLight ? "bg-white border-slate-200 shadow-xl" : "bg-[#1e293b] border-slate-800 shadow-2xl"}`}>
+            {/* 🛡️ モバイル専用：メニューが開いている時の背景半透明レイヤー */}
+            {isMobileMenuOpen && (
+              <div 
+                className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300 animate-in fade-in"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+            )}
+
+            {/* 🏰 サイドメニュー・アイランド：PCでは常時表示、スマホではスライドイン */}
+            <aside className={`
+              fixed inset-y-0 left-0 z-50 w-72 flex flex-col border-r transition-transform duration-300 ease-in-out
+              md:static md:translate-x-0
+              ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+              ${isLight ? "bg-white border-slate-200 shadow-xl" : "bg-[#1e293b] border-slate-800 shadow-2xl"}
+            `}>
               
-              {/* ロゴエリア */}
-              <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
-                <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
-                <div className="flex flex-col">
+              {/* ロゴエリア ＆ モバイル用閉じるボタン */}
+              <div className="p-8 flex items-center justify-between border-b border-slate-700/10">
+                <div className="flex items-center gap-3">
+                  <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
                   <span className={`text-base font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>VLH v2.5 Console</span>
                 </div>
+                {/* スマホ用 [×] ボタン */}
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-xl md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                >
+                  <X size={20} />
+                </button>
               </div>
 
               {/* ナビゲーションメニュー */}
@@ -132,8 +158,21 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 🚀 メインコンテンツ・アイランド */}
-            <main className="flex-1 h-full overflow-y-auto scroll-smooth">
+            {/* 🚀 メインコンテンツエリア */}
+            <main className="flex-1 h-full overflow-y-auto scroll-smooth relative">
+              
+              {/* 💡 モバイル専用：左上に浮かぶハンバーガーメニュー開閉ボタン */}
+              <div className="md:hidden p-4 sticky top-0 z-30 flex items-center bg-slate-100/80 dark:bg-[#0f172a]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+                <button 
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-3 rounded-xl bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-800 shadow-md text-indigo-500 hover:text-indigo-600 flex items-center justify-center"
+                >
+                  <Menu size={24} />
+                </button>
+                <span className="ml-4 text-sm font-black tracking-tight">アフィリエイト広告 比較・分析</span>
+              </div>
+
+              {/* 各ページのコンテンツ本体 */}
               <div className="p-4 sm:p-8">
                 {children}
               </div>
