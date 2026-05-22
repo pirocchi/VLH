@@ -89,8 +89,8 @@ export default function VLHDictionaryPage() {
 
   return (
     <div className="w-full">
-      {/* 👑 改善：不快な横文字サブタイトルを完全パージ、タイトルを「パートナー紐付け設定」へ大換装！ */}
-      <header className={`px-8 py-6 mb-8 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 border transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
+      {/* 💡 改善：ここも個別ヘッダーをPC専用化（hidden md:flex）へ完全隔離。横ハラ英語も一切排除 */}
+      <header className={`hidden md:flex px-8 py-6 mb-8 rounded-2xl flex justify-between items-center border transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30">
             <BookOpen size={24} />
@@ -124,7 +124,7 @@ export default function VLHDictionaryPage() {
               placeholder="例：お宝脱毛特化ブログ（渡辺）"
               value={newMasterName}
               onChange={(e) => setNewMasterName(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl border bg-slate-50 dark:bg-[#0f172a] border-slate-200 dark:border-slate-700 font-black text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 dark:bg-[#0f172a] dark:border-slate-700 font-black text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             />
             <button 
               onClick={addMaster}
@@ -162,8 +162,8 @@ export default function VLHDictionaryPage() {
               <div key={mIdx} className={`p-8 rounded-[32px] border group transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 uppercase tracking-tighter">Unified Target</span>
-                    <h3 className="text-xl font-black mt-2 text-slate-900 dark:text-white">{master.real_name}</h3>
+                    {/* 💡 改善：横ハラ英語「Unified Target」を跡形もなく爆破消去！ */}
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">{master.real_name}</h3>
                   </div>
                   <button 
                     onClick={() => removeMaster(mIdx)}

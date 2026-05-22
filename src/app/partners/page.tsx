@@ -8,7 +8,6 @@ import {
   Search, ShieldAlert, Layers, Filter
 } from "lucide-react";
 
-// --- サブコンポーネント: レスポンシブKPIカード ---
 const PartnerKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
   <div className={`
     ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
@@ -34,12 +33,10 @@ export default function VLHPartnersPage() {
   const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
   
-  const [searchWord, setSearchWord] = useState<string>("",);
-  // 💡 改善：新ステート「選択中のASPフィルター」を兵籍登録！
+  const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
-  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("",);
+  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
-  // 📡 RAWデータ ＆ 紐付け辞書のダブル・サルベージ
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -53,7 +50,7 @@ export default function VLHPartnersPage() {
         setPerformanceData(perfData);
         setDictData(dictionary);
       } catch (err: any) {
-        console.error("データの結合タイムラインに障害が発生しました。");
+        console.error(err.message);
       } finally {
         setLoading(false);
       }
@@ -61,7 +58,6 @@ export default function VLHPartnersPage() {
     initializeData();
   }, []);
 
-  // 🔍 パートナー（メディア名）単位への名寄せ演算マトリクス
   const partnersAggregated = useMemo(() => {
     const map: any = {};
 
@@ -124,16 +120,11 @@ export default function VLHPartnersPage() {
     }).sort((a: any, b: any) => b.revenue - a.revenue);
   }, [performanceData, dictData]);
 
-  // 💡 改善：検索ワード ＆ ASP所属状態 の二重検閲マトリクスフィルター！
   const searchedPartners = useMemo(() => {
     return partnersAggregated.filter(p => {
-      // 1. キーワード検閲（名前、または紐付けID）
       const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || 
                           p.idList.toLowerCase().includes(searchWord.toLowerCase());
-      
-      // 2. ASP所属検閲（指定のASPに実績が含まれているか）
       const matchesAsp = selectedAsp === "all" || Object.keys(p.asps).includes(selectedAsp);
-      
       return matchesWord && matchesAsp;
     });
   }, [partnersAggregated, searchWord, selectedAsp]);
@@ -171,28 +162,29 @@ export default function VLHPartnersPage() {
 
   return (
     <div className="w-full">
-      <header className={`px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
+      {/* 💡 改善：モバイル固定メニューの潜り込みを防ぐため、個別ヘッダーはPCのみ表示（hidden md:flex）へ完全隔離 */}
+      <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <h1 className="text-xl font-black tracking-tight">パートナー別詳細</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* 🗺️ 左翼：アフィリエイター検索・選択用マスター島 */}
+        {/* 左翼：検索モジュール */}
         <div className={`p-5 rounded-2xl border shadow-md h-fit ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white"}`}>
           <div className="flex items-center gap-2 mb-4">
             <Search size={16} className="text-indigo-500" />
             <span className="text-sm font-black tracking-wider">パートナー検索</span>
           </div>
 
-          {/* 💡 改善：ASPの絞り込み用セレクトボックスをインライン強制インジェクション！ */}
+          {/* 💡 改善：TPOをわきまえ「すべてのASP」へ綺麗にクレンジング！ */}
           <div className="mb-3 flex items-center gap-2">
             <Filter size={12} className="text-slate-400 flex-shrink-0" />
             <select 
               value={selectedAsp} 
               onChange={(e) => setSelectedAsp(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl text-xs font-black border bg-slate-50 border-slate-300 text-slate-800 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white outline-none"
+              className="w-full px-3 py-2 rounded-xl text-xs font-black border border-slate-300 text-slate-800 bg-slate-50 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white outline-none"
             >
-              <option value="all">すべての出撃ASP</option>
+              <option value="all">すべてのASP</option>
               <option value="A8.net">A8.net</option>
               <option value="afb">afb</option>
               <option value="AccessTrade">AccessTrade</option>
@@ -210,7 +202,8 @@ export default function VLHPartnersPage() {
             className="px-4 py-2.5 rounded-xl text-xs w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
           />
 
-          <div className="border-t border-slate-700/10 pt-3 max-h-[500px] overflow-y-auto space-y-1.5 pr-1">
+          {/* 💡 改善：PC画面（xl:）のときだけ中のリストをスクロールさせ、モバイル時は画面全体と一緒に動くよう max-h と overflow をレスポンシブ遮断！！！ */}
+          <div className="border-t border-slate-200 dark:border-slate-700/30 pt-3 xl:max-h-[500px] xl:overflow-y-auto space-y-1.5 pr-1 overflow-visible max-h-none">
             {searchedPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
@@ -233,13 +226,15 @@ export default function VLHPartnersPage() {
           </div>
         </div>
 
-        {/* 🏔 * / 右翼：11大指標コックピット */}
+        {/* 右翼：指標表示コックピット */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
+              {/* パートナー基本情報カード */}
               <div className={`p-6 rounded-2xl border shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isLight ? "bg-white border-slate-200" : "bg-[#1e293b] border-slate-800"}`}>
                 <div>
-                  <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 uppercase tracking-widest">ACTIVE PARTNER</span>
+                  {/* 💡 改善：横ハラ英語を完全抹殺、美しき「選択中のパートナー」バッジへ統合 */}
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 tracking-wider">選択中のパートナー</span>
                   <h2 className="text-xl font-black tracking-tight mt-2">{currentPartner.name}</h2>
                   <p className="text-xs text-slate-400 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
                 </div>
@@ -249,6 +244,7 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
+              {/* 11大指標グリッド */}
               <div className="space-y-4">
                 <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-blue-500 pl-2">■ パートナー単体・基礎成果</div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -270,6 +266,7 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
+              {/* ASP内訳テーブル */}
               <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
                   <Layers size={14} className="text-indigo-500" /> 出撃ASPチャンネル別・内訳レポート

@@ -9,14 +9,12 @@ import {
   Users
 } from "lucide-react";
 
-// --- サブコンポーネント: 💡 改善！モバイルでの見切れを2000%防ぐアトミック・タイポグラフィ小島 ---
 const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
   <div className={`
     ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
     p-5 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
   `}>
     <div className="flex justify-between items-start gap-2">
-      {/* 指標名はベテランのために視認性の高いサイズをキープ */}
       <span className="text-sm font-black tracking-wider block">
         {title}
       </span>
@@ -24,22 +22,10 @@ const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLi
         <Icon size={16} />
       </div>
     </div>
-    
-    {/* 💡 核心：モバイル時はフォントを text-xl〜2xl に抑え、単位（￥や％）を足元に小さく添える不沈構造 */}
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {prefix && (
-        <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70">
-          {prefix}
-        </span>
-      )}
-      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight">
-        {value}
-      </span>
-      {suffix && (
-        <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70">
-          {suffix}
-        </span>
-      )}
+      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70">{prefix}</span>}
+      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight">{value}</span>
+      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70">{suffix}</span>}
     </div>
   </div>
 );
@@ -76,7 +62,6 @@ export default function VLHDashboardPage() {
     fetchVLHMemory();
   }, []);
 
-  // 🔍 11大指標動的演算 & 多角的マトリクスフィルター
   const filteredData = useMemo(() => {
     const now = new Date();
     const getStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -129,7 +114,6 @@ export default function VLHDashboardPage() {
     });
   }, [performanceData, filterRange, customRange, selectedAsp, searchMedia, tokutanFilter]);
 
-  // 💡 11大指標 グローバル統合集計
   const summary = useMemo(() => {
     const totalImp = filteredData.reduce((acc, row) => acc + (row.impressions || 0), 0);
     const totalClicks = filteredData.reduce((acc, row) => acc + (row.clicks || 0), 0);
@@ -197,18 +181,16 @@ export default function VLHDashboardPage() {
 
   return (
     <div className="w-full">
-      
-      {/* 👑 ヘッダー */}
-      <header className={`px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
+      {/* 💡 改善：モバイル時は固定ヘッダーの下に潜り込んで隠れるため、個別ヘッダーをPC専用化（hidden md:flex）へ完全隔離 */}
+      <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-black tracking-tight">全体ダッシュボード</h1>
         </div>
       </header>
 
-      {/* 🛠️ コントロールパネル */}
+      {/* コントロールパネル */}
       <div className="mb-5">
-        <div className={`p-6 rounded-2xl border flex flex-col gap-5 shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-lg"}`}>
-          
+        <div className={`p-6 rounded-2xl border flex flex-col gap-5 shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-lg"}`}>
           <div className={`flex flex-wrap items-center gap-4 border-b pb-4 ${isLight ? "border-slate-200" : "border-slate-700/50"}`}>
             <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
               <Filter size={14} /> 期間切替
@@ -231,7 +213,7 @@ export default function VLHDashboardPage() {
             <div className="flex items-center gap-2">
               <span className="text-xs font-black tracking-wider text-slate-400">ASP選択:</span>
               <select value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)} className={`px-3 py-1.5 rounded-lg text-xs font-black border ${isLight ? "bg-slate-50 border-slate-300 text-slate-800" : "bg-[#0f172a] dark:border-slate-700 text-white"}`}>
-                <option value="all">すべてのASPチャンネル</option>
+                <option value="all">すべてのASP</option>
                 <option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
               </select>
             </div>
@@ -251,11 +233,10 @@ export default function VLHDashboardPage() {
         </div>
       </div>
 
-      {/* 🚀 メインコンテンツ */}
+      {/* メインコンテンツ */}
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase">■ 基礎成果セクション</div>
-          {/* 💡 改善：prefix / suffix を個別に渡し、モバイル専用のフォント補正を起動 */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <VLHKPICard title="インプレッション数" value={summary.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
             <VLHKPICard title="クリック数" value={summary.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
@@ -276,11 +257,11 @@ export default function VLHDashboardPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className={`xl:col-span-2 border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
-            <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>
+            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white"><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                 <thead>
-                  <tr className={`border-b font-black uppercase select-none cursor-pointer ${isLight ? "border-slate-200 text-slate-500" : "border-slate-700 text-slate-400"}`}>
+                  <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400 font-black uppercase select-none cursor-pointer">
                     <th className="pb-3 text-left hover:text-indigo-500" onClick={() => handleAspSort("name")}>ASP {renderSortIcon("name")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("impressions")}>インプレッション数 {renderSortIcon("impressions")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("clicks")}>クリック数 {renderSortIcon("clicks")}</th>
@@ -289,10 +270,10 @@ export default function VLHDashboardPage() {
                     <th className="pb-3 text-right hover:text-indigo-500" onClick={() => handleAspSort("cpa")}>CPA {renderSortIcon("cpa")}</th>
                   </tr>
                 </thead>
-                <tbody className={`divide-y font-bold ${isLight ? "divide-slate-100 text-slate-700" : "divide-slate-800/60 text-slate-200"}`}>
+                <tbody className="divide-y divide-slate-100 text-slate-700 dark:divide-slate-800/60 dark:text-slate-200 font-bold">
                   {aspPerformance.map((asp:any, idx:number) => (
                     <tr key={idx} className="hover:bg-indigo-500/5 transition-colors">
-                      <td className={`py-4 font-black flex items-center gap-2 ${isLight ? "text-slate-900" : "text-white"}`}><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
+                      <td className="py-4 font-black text-slate-900 dark:text-white flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
                       <td className="py-4 text-right opacity-80">{asp.impressions.toLocaleString()}回</td>
                       <td className="py-4 text-right">{asp.clicks.toLocaleString()}回</td>
                       <td className="py-4 text-right text-red-500">￥{Math.round(asp.reward).toLocaleString()}</td>
@@ -306,12 +287,10 @@ export default function VLHDashboardPage() {
           </div>
 
           <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-transparent text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
-            <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
+            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white"><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
             <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black mb-4 ${isLight ? "border-slate-200 bg-slate-100" : "bg-[#0f172a] border-slate-800"}`}>
               {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "issued_reward", l: "報酬額" }].map(b => (
-                <button key={b.k} onClick={() => setMediaSortKey(b.k)} className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}>
-                  {b.l}
-                </button>
+                <button key={b.k} onClick={() => setMediaSortKey(b.k)} className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}>{b.l}</button>
               ))}
             </div>
             <div className="space-y-3">
