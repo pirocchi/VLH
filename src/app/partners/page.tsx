@@ -5,10 +5,10 @@ import { ThemeContext } from "../layout";
 import { 
   Users, Eye, MousePointer, Percent, ShoppingBag, TrendingUp,
   DollarSign, ArrowUpRight, Flame, Target, Coins, BarChart3,
-  Search, ShieldAlert, ChevronRight, Layers
+  Search, ShieldAlert, Layers
 } from "lucide-react";
 
-// --- サブコンポーネント: モバイル見切れを永久防衛するレスポンシブKPIカード ---
+// --- サブコンポーネント: レスポンシブKPIカード ---
 const PartnerKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
   <div className={`
     ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
@@ -31,40 +31,59 @@ export default function VLHPartnersPage() {
   const isLight = activeTheme === "light";
 
   const [performanceData, setPerformanceData] = useState<any[]>([]);
+  // 💡 改善：手動紐付け辞書をストックする新ステート
+  const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
-  
-  // 💡 ステート群：検索ワード と 現在選択されているアフィリエイター名
-  const [searchWord, setSearchWord] = useState<string>("");
+  const [searchWord, setSearchWord] = useState<string>("",);
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
+  // 📡 RAWデータ ＆ 手動紐付け辞書のダブル・サルベージ
   useEffect(() => {
-    const fetchVLHMemory = async () => {
+    const initializeData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/performance", { cache: "no-store" });
-        if (!res.ok) throw new Error("データ抽出に失敗しました。");
-        const data = await res.json();
-        setPerformanceData(data);
+        // 1. パフォーマンス成果データの抽出
+        const perfRes = await fetch("/api/performance", { cache: "no-store" });
+        const perfData = perfRes.ok ? await perfRes.json() : [];
+        
+        // 2. 秘密倉庫（辞書）からの手動紐付けルールの抽出
+        const dictRes = await fetch("/api/dictionary", { cache: "no-store" });
+        const dictionary = dictRes.ok ? await dictRes.json() : { master_partners: [] };
+
+        setPerformanceData(perfData);
+        setDictData(dictionary);
       } catch (err: any) {
-        console.error(err.message);
+        console.error("データの結合タイムラインに障害が発生しました。");
       } finally {
         setLoading(false);
       }
     };
-    fetchVLHMemory();
+    initializeData();
   }, []);
 
-  // 🔍 核心ロジック：全RAWデータから「パートナー（メディア名）単位」へ超高速名寄せ集計
+  // 🔍 核心：手動紐付け辞書（MIMIRの意思）を噛ませた超名寄せ演算マトリクス
   const partnersAggregated = useMemo(() => {
     const map: any = {};
 
     performanceData.forEach(row => {
-      const name = row.media_name ? row.media_name.strip ? row.media_name.strip() : row.media_name : "不明なパートナー";
-      if (!name || name === "日別レポート") return; // ノイズパージ
+      const rawName = row.media_name || "不明なパートナー";
+      const rawId = row.media_id || "N/A";
+      if (!rawName || rawName === "日別レポート") return; 
 
-      if (!map[name]) {
-        map[name] = {
-          name,
+      // 💡 改善：手動紐付け辞書に登録があるか、名前とIDで徹底検閲
+      let finalName = rawName;
+      const match = dictData.master_partners?.find((entry: any) => 
+        entry.aliases?.includes(rawName) || entry.aliases?.includes(rawId)
+      );
+      
+      // もし福本様の手動紐付けルールに合致したら、その指定グループ名（real_name）へ強制的に名寄せ収束！
+      if (match) {
+        finalName = match.real_name;
+      }
+
+      if (!map[finalName]) {
+        map[finalName] = {
+          name: finalName,
           ids: new Set<string>(),
           impressions: 0,
           clicks: 0,
@@ -74,26 +93,24 @@ export default function VLHPartnersPage() {
         };
       }
 
-      map[name].ids.add(row.media_id || "N/A");
-      map[name].impressions += (row.impressions || 0);
-      map[name].clicks += (row.clicks || 0);
-      map[name].issued_count += (row.issued_count || 0);
-      map[name].issued_reward += (row.issued_reward || 0);
+      map[finalName].ids.add(rawId);
+      map[finalName].impressions += (row.impressions || 0);
+      map[finalName].clicks += (row.clicks || 0);
+      map[finalName].issued_count += (row.issued_count || 0);
+      map[finalName].issued_reward += (row.issued_reward || 0);
 
-      // パートナー内部でのASP別の戦績内訳
       const asp = row.asp;
-      if (!map[name].asps[asp]) {
-        map[name].asps[asp] = { impressions: 0, clicks: 0, issued_count: 0, issued_reward: 0 };
+      if (!map[finalName].asps[asp]) {
+        map[finalName].asps[asp] = { impressions: 0, clicks: 0, issued_count: 0, issued_reward: 0 };
       }
-      map[name].asps[asp].impressions += (row.impressions || 0);
-      map[name].asps[asp].clicks += (row.clicks || 0);
-      map[name].asps[asp].issued_count += (row.issued_count || 0);
-      map[name].asps[asp].issued_reward += (row.issued_reward || 0);
+      map[finalName].asps[asp].impressions += (row.impressions || 0);
+      map[finalName].asps[asp].clicks += (row.clicks || 0);
+      map[finalName].asps[asp].issued_count += (row.issued_count || 0);
+      map[finalName].asps[asp].issued_reward += (row.issued_reward || 0);
     });
 
-    // オブジェクトから配列に変換し、基礎戦闘力（売上規模）順に並び替え
     return Object.values(map).map((p: any) => {
-      const rev = p.issued_count * 79800; // ケノン単価 ¥79,800
+      const rev = p.issued_count * 79800; 
       const cost = p.issued_reward;
       return {
         ...p,
@@ -107,9 +124,8 @@ export default function VLHPartnersPage() {
         cpm: p.impressions > 0 ? parseFloat(((cost / p.impressions) * 1000).toFixed(2)) : 0.0
       };
     }).sort((a: any, b: any) => b.revenue - a.revenue);
-  }, [performanceData]);
+  }, [performanceData, dictData]);
 
-  // 💡 検索ワードでパートナーリストをフィルタリング（デカ文字・爆速サジェスト）
   const searchedPartners = useMemo(() => {
     return partnersAggregated.filter(p => 
       p.name.toLowerCase().includes(searchWord.toLowerCase()) || 
@@ -117,15 +133,12 @@ export default function VLHPartnersPage() {
     );
   }, [partnersAggregated, searchWord]);
 
-  // 💡 現在アクティブ（選択中）のパートナーの全詳細データをパース
   const currentPartner = useMemo(() => {
     if (searchedPartners.length === 0) return null;
-    // 選択されていない、またはリストにない場合は筆頭（トップ）パートナーを自動指名
     const found = searchedPartners.find(p => p.name === selectedPartnerName);
     return found || searchedPartners[0];
   }, [searchedPartners, selectedPartnerName]);
 
-  // 💡 選択中のパートナーの「ASP別内訳」を配列展開
   const currentPartnerAsps = useMemo(() => {
     if (!currentPartner) return [];
     return Object.keys(currentPartner.asps).map(aspName => {
@@ -149,19 +162,17 @@ export default function VLHPartnersPage() {
     });
   }, [currentPartner]);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest">パートナー脳内名寄せ分析中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest">手動紐付けデータ同期中...</div>;
 
   return (
     <div className="w-full">
-      {/* 👑 ヘッダー（規律：くどいVLHロゴを完全排除） */}
       <header className={`px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <h1 className="text-xl font-black tracking-tight">パートナー別詳細</h1>
       </header>
 
-      {/* 📡 メインスプリット構造（左側：検索・選択リスト、右側：11指標＆内訳） */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* 🗺️ 左翼：アフィリエイター検索・選択用マスター島 */}
+        {/* 左翼：検索リスト */}
         <div className={`p-5 rounded-2xl border shadow-md h-fit ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white"}`}>
           <div className="flex items-center gap-2 mb-4">
             <Search size={16} className="text-indigo-500" />
@@ -193,17 +204,13 @@ export default function VLHPartnersPage() {
                 </div>
               );
             })}
-            {searchedPartners.length === 0 && (
-              <div className="text-center py-8 text-slate-500 text-xs font-bold">該当パートナー不在</div>
-            )}
           </div>
         </div>
 
-        {/* 🏔️ 右翼：選択されたパートナーの「11大指標フルバースト」コックピット */}
+        {/* 右翼：11大指標 */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
-              {/* パートナー基本情報カード */}
               <div className={`p-6 rounded-2xl border shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isLight ? "bg-white border-slate-200" : "bg-[#1e293b] border-slate-800"}`}>
                 <div>
                   <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 uppercase tracking-widest">ACTIVE PARTNER</span>
@@ -211,12 +218,11 @@ export default function VLHPartnersPage() {
                   <p className="text-xs text-slate-400 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
                 </div>
                 <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-l border-slate-700/20 pt-3 sm:pt-0 sm:pl-6 flex-shrink-0">
-                  <span className="text-xs font-black text-slate-400 block">このアフィリエイト経由の総売上</span>
+                  <span className="text-xs font-black text-slate-400 block">総売上</span>
                   <span className="text-3xl font-black text-emerald-500 block mt-1">￥{Math.round(currentPartner.revenue).toLocaleString()}</span>
                 </div>
               </div>
 
-              {/* 11大指標2段組グリッド：端数・通貨小数点以下完全パージ */}
               <div className="space-y-4">
                 <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-blue-500 pl-2">■ パートナー単体・基礎成果</div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -238,7 +244,7 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* 最下段：そのパートナーのASP別内訳詳細レポートテーブル */}
+              {/* ASP内訳テーブル */}
               <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
                   <Layers size={14} className="text-indigo-500" /> 出撃ASPチャンネル別・内訳レポート
@@ -262,9 +268,7 @@ export default function VLHPartnersPage() {
                     <tbody className="divide-y divide-slate-100 text-slate-700 dark:divide-slate-800/60 dark:text-slate-200 font-bold">
                       {currentPartnerAsps.map((asp: any, idx: number) => (
                         <tr key={idx} className="hover:bg-indigo-500/5 transition-colors">
-                          <td className="py-4 font-black text-slate-900 dark:text-white flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}
-                          </td>
+                          <td className="py-4 font-black text-slate-900 dark:text-white flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
                           <td className="py-4 text-right opacity-80">{asp.impressions.toLocaleString()}回</td>
                           <td className="py-4 text-right">{asp.clicks.toLocaleString()}回</td>
                           <td className="py-4 text-right text-purple-500">{asp.ctr}％</td>
