@@ -60,7 +60,6 @@ export default function RootLayout({
 
   const isLight = activeTheme === "light";
 
-  // 💡 規律：シンプルかつ分かりやすい日本語（特単管理）
   const menuItems = [
     { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
     { name: "パートナー別詳細", path: "/partners", icon: Users },
@@ -77,7 +76,7 @@ export default function RootLayout({
           {/* 🏔️ 全体レイアウトコンテナ */}
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100">
             
-            {/* 🏰 【PC専用】左側の司令塔サイドメニュー：モバイル（md未満）では完全に hidden */}
+            {/* 🏰 【PC専用】左側の司令塔サイドメニュー */}
             <aside className="hidden md:flex w-72 flex-shrink-0 flex flex-col border-r bg-white border-slate-200 shadow-xl dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-2xl">
               {/* ロゴエリア */}
               <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
@@ -110,7 +109,7 @@ export default function RootLayout({
                 })}
               </nav>
 
-              {/* PC用最下段：テーマ切替・フッター */}
+              {/* PC用最下段 */}
               <div className="p-6 border-t border-slate-100 dark:border-slate-800">
                 <div className={`flex p-1.5 rounded-2xl ${isLight ? "bg-slate-200" : "bg-[#0f172a]"}`}>
                   {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
@@ -129,42 +128,26 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 🏛️ 【モバイル専用】常時固定トップヘッダー ＆ 横スクロールメニュー（SGT直系規律） */}
+            {/* 🏛️ 【モバイル専用】常時固定トップヘッダー ＆ 横スクロールメニュー */}
             <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex flex-col border-b bg-white border-slate-200 shadow-md dark:bg-[#1e293b] dark:border-slate-800">
-              
-              {/* 1段目：タイトル ＆ コンパクトモード切替 */}
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700/40">
                 <div className="flex items-center gap-2">
                   <div className="bg-indigo-600 text-white px-2 py-0.5 rounded-md font-black text-xs">VLH</div>
                   <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">アフィリエイト広告 比較・分析</span>
                 </div>
-                
-                {/* モバイル用コンパクトテーマスイッチ */}
                 <div className="flex p-0.5 rounded-xl bg-slate-100 dark:bg-[#0f172a]">
                   {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
-                    <button 
-                      key={t.m} 
-                      onClick={() => setThemeMode(t.m as any)} 
-                      className={`p-1.5 rounded-lg transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400"}`}
-                    >
-                      <t.i size={12} />
-                    </button>
+                    <button key={t.m} onClick={() => setThemeMode(t.m as any)} className={`p-1.5 rounded-lg transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400"}`}><t.i size={12} /></button>
                   ))}
                 </div>
               </div>
 
-              {/* 2段目：SGTの魂を宿した、項目が横に滑らかに滑る水平スクロールメニュー */}
               <nav className="flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto whitespace-nowrap scrollbar-none scroll-smooth">
                 {menuItems.map((item) => {
                   const isActive = pathname === item.path;
                   return (
                     <Link key={item.path} href={item.path} className="flex-shrink-0">
-                      <div className={`
-                        px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black transition-all duration-200
-                        ${isActive 
-                          ? "bg-indigo-600 text-white shadow-md" 
-                          : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-[#0f172a] text-slate-400 hover:text-white"}
-                      `}>
+                      <div className={`px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black transition-all duration-200 ${isActive ? "bg-indigo-600 text-white shadow-md" : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-[#0f172a] text-slate-400 hover:text-white"}`}>
                         <item.icon size={13} className={isActive ? "text-white" : "text-indigo-500"} />
                         {item.name}
                       </div>
@@ -174,8 +157,8 @@ export default function RootLayout({
               </nav>
             </header>
 
-            {/* 🚀 メインコンテンツエリア：モバイル時は上部固定ヘッダー分（98px）を確実にptで退避！ */}
-            <main className="flex-1 h-full overflow-y-auto scroll-smooth pt-[98px] md:pt-0">
+            {/* 🚀 メインコンテンツエリア：💡 改善！モバイル時の見切れを防ぐため、pb-28（下部防波堤）を緊急装填！！！ */}
+            <main className="flex-1 h-full overflow-y-auto scroll-smooth pt-[98px] pb-28 md:pt-0 md:pb-0">
               <div className="p-4 sm:p-8">
                 {children}
               </div>
