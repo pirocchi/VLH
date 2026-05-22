@@ -11,7 +11,7 @@ import {
 
 const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
   <div className={`
-    ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
+    ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
     p-5 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
   `}>
     <div className="flex justify-between items-start gap-2">
@@ -36,7 +36,8 @@ export default function VLHDashboardPage() {
 
   const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [filterRange, setFilterRange] = useState<string>("30d"); 
+  // 💡 改善：初期起動時に「空欄」になる悲劇を永久パージするため、デフォルトを「all（全期間）」に兵籍変更！！！
+  const [filterRange, setFilterRange] = useState<string>("all"); 
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
   const [searchMedia, setSearchMedia] = useState<string>("");
@@ -63,6 +64,7 @@ export default function VLHDashboardPage() {
   }, []);
 
   const filteredData = useMemo(() => {
+    // 💡 西暦2026年現在の現在時刻を絶対軸として設定
     const now = new Date();
     const getStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const startOfToday = getStartOfDay(now);
@@ -73,7 +75,7 @@ export default function VLHDashboardPage() {
       const cv = row.issued_count || 0;
       const cost = row.issued_reward || 0;
       
-      const revenue = cv * 79800;
+      const revenue = cv * 79800; // ケノン市場統一販売価格
       const ctr = imp > 0 ? parseFloat(((clk / imp) * 100).toFixed(2)) : 0.0;
       const cvr = clk > 0 ? parseFloat(((cv / clk) * 100).toFixed(2)) : 0.0;
       const roas = cost > 0 ? parseFloat(((revenue / cost) * 100).toFixed(2)) : 0.0;
@@ -83,33 +85,45 @@ export default function VLHDashboardPage() {
 
       return { ...row, revenue, ctr, cvr, roas, cpa, cpc, cpm };
     }).filter(row => {
+      // 1. 各種メタフィルタリング
       if (selectedAsp !== "all" && row.asp !== selectedAsp) return false;
       if (searchMedia && !row.media_name.toLowerCase().includes(searchMedia.toLowerCase()) && !row.media_id.toLowerCase().includes(searchMedia.toLowerCase())) return false;
       if (tokutanFilter === "tokutan" && row.cpa <= 6000) return false;
       if (tokutanFilter === "normal" && row.cpa > 6000) return false;
 
-      if (!row.date) return filterRange === "30d" || filterRange === "all"; 
+      if (!row.date) return true; 
+
+      // 💡 改善：バグの温床になっていた diffDays 計算を完全廃止！！！
+      // タイムスタンプ（ミリ秒）ベースの絶対不等式による、直感的かつ確実な日付範囲調停規律へ換装。
       const rowDate = getStartOfDay(new Date(row.date));
-      const diffTime = startOfToday.getTime() - rowDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const rowTime = rowDate.getTime();
+      const todayTime = startOfToday.getTime();
+      const oneDayMs = 1000 * 60 * 60 * 24;
 
       switch (filterRange) {
-        case "yesterday": return diffDays === 1;
-        case "7d": return diffDays >= 0 && diffDays <= 7;
-        case "14d": return diffDays >= 0 && diffDays <= 14;
-        case "30d": return diffDays >= 0 && diffDays <= 30;
-        case "1y": return diffDays >= 0 && diffDays <= 365;
+        case "yesterday": 
+          return rowTime === todayTime - oneDayMs;
+        case "7d": 
+          return rowTime >= todayTime - (7 * oneDayMs) && rowTime <= todayTime;
+        case "14d": 
+          return rowTime >= todayTime - (14 * oneDayMs) && rowTime <= todayTime;
+        case "30d": 
+          return rowTime >= todayTime - (30 * oneDayMs) && rowTime <= todayTime;
+        case "1y": 
+          return rowTime >= todayTime - (365 * oneDayMs) && rowTime <= todayTime;
         case "thisMonth":
-          const rDate = new Date(row.date);
-          return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
+          return rowDate.getMonth() === now.getMonth() && rowDate.getFullYear() === now.getFullYear();
         case "lastMonth":
-          const rDate2 = new Date(row.date);
           const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          return rDate2.getMonth() === lm.getMonth() && rDate2.getFullYear() === lm.getFullYear();
+          return rowDate.getMonth() === lm.getMonth() && rowDate.getFullYear() === lm.getFullYear();
         case "custom":
           if (!customRange.start || !customRange.end) return true;
-          return rowDate.getTime() >= getStartOfDay(new Date(customRange.start)).getTime() && rowDate.getTime() <= getStartOfDay(new Date(customRange.end)).getTime();
-        default: return true;
+          const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
+          const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
+          return rowTime >= startLimit && rowTime <= endLimit;
+        case "all":
+        default: 
+          return true; // 全件通過
       }
     });
   }, [performanceData, filterRange, customRange, selectedAsp, searchMedia, tokutanFilter]);
@@ -160,6 +174,7 @@ export default function VLHDashboardPage() {
       };
     }).sort((a: any, b: any) => {
       let valA = a[aspSortKey]; let valB = b[aspSortKey];
+      if (typeof valA === "string") return aspSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
       return aspSortAsc ? valA - valB : valB - valA;
     });
   }, [filteredData, aspSortKey, aspSortAsc]);
@@ -181,7 +196,6 @@ export default function VLHDashboardPage() {
 
   return (
     <div className="w-full">
-      {/* 💡 改善：モバイル時は固定ヘッダーの下に潜り込んで隠れるため、個別ヘッダーをPC専用化（hidden md:flex）へ完全隔離 */}
       <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-black tracking-tight">全体ダッシュボード</h1>
@@ -196,7 +210,7 @@ export default function VLHDashboardPage() {
               <Filter size={14} /> 期間切替
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {[{l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
+              {[{l:"全期間", v:"all"}, {l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
                 <button key={range.v} onClick={() => setFilterRange(range.v)} className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-md" : (isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-[#0f172a] text-slate-400 hover:text-white")}`}>{range.l}</button>
               ))}
             </div>
@@ -233,7 +247,7 @@ export default function VLHDashboardPage() {
         </div>
       </div>
 
-      {/* メインコンテンツ */}
+      {/* 📊 メインコンテンツ */}
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase">■ 基礎成果セクション</div>
