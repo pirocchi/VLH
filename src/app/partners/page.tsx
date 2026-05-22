@@ -14,13 +14,15 @@ const PartnerKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, 
     p-5 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
   `}>
     <div className="flex justify-between items-start gap-2">
-      <span className="text-sm font-black tracking-wider block">{title}</span>
+      {/* 💡 改善：タイトルのダークモード視認性を確保 */}
+      <span className="text-sm font-black tracking-wider block text-slate-800 dark:text-slate-200">{title}</span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}><Icon size={16} /></div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70">{prefix}</span>}
-      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight">{value}</span>
-      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70">{suffix}</span>}
+      {/* 💡 改善：プレフィックス・サフィックスの薄い文字もダークモードで美しく調停 */}
+      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70 text-slate-600 dark:text-slate-400">{prefix}</span>}
+      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</span>
+      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70 text-slate-600 dark:text-slate-400">{suffix}</span>}
     </div>
   </div>
 );
@@ -158,11 +160,12 @@ export default function VLHPartnersPage() {
     });
   }, [currentPartner]);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest">手動紐付けデータ同期中...</div>;
+  // 💡 改善：ローディング文字色を完全調停
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">手動紐付けデータ同期中...</div>;
 
   return (
     <div className="w-full">
-      <header className="hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all bg-white border-slate-200 text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
+      <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <h1 className="text-xl font-black tracking-tight">パートナー別詳細</h1>
       </header>
 
@@ -176,11 +179,13 @@ export default function VLHPartnersPage() {
           </div>
 
           <div className="mb-3 flex items-center gap-2">
-            <Filter size={12} className="text-slate-400 flex-shrink-0" />
+            {/* 💡 改善：アイコンのグレーをダークモードで浮き立たせる */}
+            <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
             <select 
               value={selectedAsp} 
               onChange={(e) => setSelectedAsp(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl text-xs font-black border border-slate-300 text-slate-800 bg-slate-50 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white outline-none"
+              // 💡 改善：プルダウンの純正ダークモード化
+              className="w-full px-3 py-2 rounded-xl text-xs font-black border border-slate-300 text-slate-800 bg-slate-50 focus:outline-none focus:border-indigo-500 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white"
             >
               <option value="all">すべてのASP</option>
               <option value="A8.net">A8.net</option>
@@ -197,28 +202,35 @@ export default function VLHPartnersPage() {
             placeholder="メディア名・IDを入力..."
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
-            className="px-4 py-2.5 rounded-xl text-xs w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
+            // 💡 改善：検索窓の純正ダークモード化
+            className="px-4 py-2.5 rounded-xl text-xs w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
           />
 
-          <div className="border-t border-slate-200 dark:border-slate-700/30 pt-3 h-80 xl:h-[500px] overflow-y-auto space-y-1.5 pr-1">
+          <div className="border-t border-slate-200 dark:border-slate-700/50 pt-3 h-80 xl:h-[500px] overflow-y-auto space-y-1.5 pr-1">
             {searchedPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
                 <div 
                   key={idx}
                   onClick={() => setSelectedPartnerName(partner.name)}
-                  className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border border-transparent ${isSelected ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20 font-black" : "bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-[#0f172a]/40 dark:text-slate-300 dark:hover:bg-[#0f172a]/90"}`}
+                  // 💡 改善：リストのホバー色、テキスト色をダークモードで完璧に美しく調停
+                  className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border border-transparent ${
+                    isSelected 
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20 font-black" 
+                      : "bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-[#0f172a]/40 dark:text-slate-300 dark:hover:bg-[#0f172a]/90"
+                  }`}
                 >
                   <p className="text-xs md:text-sm truncate font-black">{partner.name}</p>
                   <div className="flex justify-between items-center text-[10px] opacity-60 font-bold">
                     <span className="truncate">ID: {partner.idList}</span>
-                    <span className="text-indigo-400 dark:text-emerald-400 ml-2 flex-shrink-0">￥{Math.round(partner.revenue).toLocaleString()}</span>
+                    <span className="text-indigo-500 dark:text-emerald-400 ml-2 flex-shrink-0">￥{Math.round(partner.revenue).toLocaleString()}</span>
                   </div>
                 </div>
               );
             })}
             {searchedPartners.length === 0 && (
-              <div className="text-center py-8 text-slate-500 text-xs font-bold">該当パートナー不在</div>
+              // 💡 改善：該当なしテキストのダークモード視認性確保
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs font-bold">該当パートナー不在</div>
             )}
           </div>
         </div>
@@ -230,17 +242,18 @@ export default function VLHPartnersPage() {
               <div className={`p-6 rounded-2xl border shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isLight ? "bg-white border-slate-200" : "bg-[#1e293b] border-slate-800"}`}>
                 <div>
                   <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 tracking-wider">選択中のパートナー</span>
-                  <h2 className="text-xl font-black tracking-tight mt-2">{currentPartner.name}</h2>
-                  <p className="text-xs text-slate-400 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
+                  <h2 className="text-xl font-black tracking-tight mt-2 text-slate-900 dark:text-white">{currentPartner.name}</h2>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
                 </div>
-                <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-l border-slate-700/20 pt-3 sm:pt-0 sm:pl-6 flex-shrink-0">
-                  <span className="text-xs font-black text-slate-400 block">総売上</span>
-                  <span className="text-3xl font-black text-emerald-500 block mt-1">￥{Math.round(currentPartner.revenue).toLocaleString()}</span>
+                <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-l border-slate-700/20 dark:border-slate-700/50 pt-3 sm:pt-0 sm:pl-6 flex-shrink-0">
+                  <span className="text-xs font-black text-slate-400 dark:text-slate-400 block">総売上</span>
+                  <span className="text-3xl font-black text-emerald-500 dark:text-emerald-400 block mt-1">￥{Math.round(currentPartner.revenue).toLocaleString()}</span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-blue-500 pl-2">■ パートナー単体・基礎成果</div>
+                {/* 💡 改善：セクションタイトルのグレーをダークモードで浮き立たせる */}
+                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-400 uppercase border-l-4 border-blue-500 pl-2">■ パートナー単体・基礎成果</div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   <PartnerKPICard title="インプレッション数" value={currentPartner.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
                   <PartnerKPICard title="クリック数" value={currentPartner.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
@@ -249,7 +262,7 @@ export default function VLHPartnersPage() {
                   <PartnerKPICard title="コンバージョン率" value={currentPartner.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
                 </div>
 
-                <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ パートナー単体・広告運用財務効率</div>
+                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-400 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ パートナー単体・広告運用財務効率</div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   <PartnerKPICard title="報酬額" prefix="￥" value={Math.round(currentPartner.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
                   <PartnerKPICard title="売上" prefix="￥" value={Math.round(currentPartner.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
@@ -260,15 +273,15 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* 💡 改善：テーブルタイトルからおいたこな「出撃」を永久追放、綺麗な「ASP別内訳レポート」へ完全純化！ */}
-              <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
+              <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
                   <Layers size={14} className="text-indigo-500" /> ASP別内訳レポート
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400 font-black uppercase select-none">
+                      {/* 💡 改善：テーブルヘッダーのテキスト色を調停 */}
+                      <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-black uppercase select-none">
                         <th className="pb-3 text-left">ASP名</th>
                         <th className="pb-3 text-right">インプレッション数</th>
                         <th className="pb-3 text-right">クリック数</th>
@@ -281,19 +294,19 @@ export default function VLHPartnersPage() {
                         <th className="pb-3 text-right">CPA</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700 dark:divide-slate-800/60 dark:text-slate-200 font-bold">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200 font-bold">
                       {currentPartnerAsps.map((asp: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-indigo-500/5 transition-colors">
+                        <tr key={idx} className="hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10 transition-colors">
                           <td className="py-4 font-black text-slate-900 dark:text-white flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
                           <td className="py-4 text-right opacity-80">{asp.impressions.toLocaleString()}回</td>
                           <td className="py-4 text-right">{asp.clicks.toLocaleString()}回</td>
-                          <td className="py-4 text-right text-purple-500">{asp.ctr}％</td>
-                          <td className="py-4 text-right text-green-500">{asp.issued_count}件</td>
-                          <td className="py-4 text-right text-teal-500">{asp.cvr}％</td>
-                          <td className="py-4 text-right text-red-500">￥{Math.round(asp.reward).toLocaleString()}</td>
-                          <td className="py-4 text-right text-emerald-500">￥{Math.round(asp.revenue).toLocaleString()}</td>
-                          <td className="py-4 text-right text-yellow-500 font-black">{asp.roas}％</td>
-                          <td className="py-4 text-right text-pink-500">￥{Math.round(asp.cpa).toLocaleString()}</td>
+                          <td className="py-4 text-right text-purple-500 dark:text-purple-400">{asp.ctr}％</td>
+                          <td className="py-4 text-right text-green-500 dark:text-green-400">{asp.issued_count}件</td>
+                          <td className="py-4 text-right text-teal-500 dark:text-teal-400">{asp.cvr}％</td>
+                          <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.reward).toLocaleString()}</td>
+                          <td className="py-4 text-right text-emerald-500 dark:text-emerald-400">￥{Math.round(asp.revenue).toLocaleString()}</td>
+                          <td className="py-4 text-right text-yellow-500 dark:text-yellow-400 font-black">{asp.roas}％</td>
+                          <td className="py-4 text-right text-pink-500 dark:text-pink-400">￥{Math.round(asp.cpa).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -302,8 +315,9 @@ export default function VLHPartnersPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-20 text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-800 rounded-3xl">
-              <ShieldAlert size={24} className="text-slate-600"/>
+            // 💡 改善：合致なしの空画面のテキストと枠線もダークモードで美しく
+            <div className="text-center py-20 text-slate-500 dark:text-slate-400 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl">
+              <ShieldAlert size={24} className="text-slate-400 dark:text-slate-500"/>
               指定のASPフィルターに合致するパートナー情報が存在しません。
             </div>
           )}
