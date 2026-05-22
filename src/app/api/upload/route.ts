@@ -127,16 +127,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 🚀 クラウド（Vercel Blob Private）へ大統一JSONを直撃射出！！！
+    // 🚀 核心：クラウド（Vercel Blob Private）へ大統一JSONを絶対上書き直撃射出！！！
     if (combinedNormalizedList.length > 0) {
-      console.log(`🌐 Vercel Blob [vlh-memory] へ最終大統一JSONを射出中... (総行数: ${combinedNormalizedList.length} 行)`);
-      await put("vlh_normalized_performance.json", JSON.stringify(combinedNormalizedList, null, 2), {
-        access: "private",
-        addRandomSuffix: false,
-        token: process.env.BLOB_READ_WRITE_TOKEN
-      });
+      console.log(`🌐 Vercel Blob [vlh-memory] へ最終大統一JSONを絶対上書き射出中... (総行数: ${combinedNormalizedList.length} 行)`);
       
-      // ローカル側への物理上書き
+      try {
+        // 💡 最終調停：Vercel BlobのPrivate規律におけるオプションの檻を100%完全適合化！
+        // allowOverwrite: true を明示し、同一のファイル名（vlh_normalized_performance.json）を容赦なく最新成果で上書きします！
+        await put("vlh_normalized_performance.json", JSON.stringify(combinedNormalizedList, null, 2), {
+          access: "private",
+          addRandomSuffix: false,
+          allowOverwrite: true, // 絶対上書き許可
+          token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+        
+        console.log("✓ Vercel Blob への絶対上書き打ち上げに完全勝利しました！");
+      } catch (blobPutErr: any) {
+        console.error("❌ Vercel Blob 射出中にセキュリティー防衛線で大破:", blobPutErr.message);
+        throw blobPutErr;
+      }
+      
+      // ローカル側への物理上書きバックアップ
       try {
         fs.writeFileSync(MEMORY_JSON_PATH, JSON.stringify(combinedNormalizedList, null, 2), "utf-8");
         console.log("🏠 ローカルの物理 JSON メモリのバックアップ上書きも完全完了しました。");
