@@ -5,12 +5,13 @@ import path from "path";
 
 export async function GET() {
   try {
-    // 🚀 核心：クラウド要塞『vlh-memory』の目録から最新の名寄せJSONの直URLを特定
     const blobList = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
-    const targetBlob = blobList.blobs.find(b => b.pathname === "vlh_normalized_performance.json");
+    
+    // 💡 最終調停：Vercel Blobの履歴の中から、最新のアップロード順（降順）にソートして「最も新しい本物のデータ」を正確に掴む！
+    const sortedBlobs = blobList.blobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    const targetBlob = sortedBlobs.find(b => b.pathname === "vlh_normalized_performance.json");
 
     if (targetBlob) {
-      // 秘密のURLから中身の純化データを直接ダウンロード（キャッシュを殺して常に最新化）
       const res = await fetch(targetBlob.url, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
@@ -18,7 +19,7 @@ export async function GET() {
       }
     }
 
-    // 💡 安全弁：万が一クラウド側にまだデータが無い場合は、ローカルのバックアップJSONを読みに行くフォールバック規律
+    // 安全フォールバック：ローカルのバックアップJSON
     const CONSOLE_ROOT = process.cwd();
     const MEMORY_JSON_PATH = path.join(CONSOLE_ROOT, "..", "03_Memory", "vlh_normalized_performance.json");
     
