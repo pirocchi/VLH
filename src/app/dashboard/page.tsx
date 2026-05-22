@@ -309,7 +309,9 @@ export default function VLHDashboardPage() {
             <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
             <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black mb-4 ${isLight ? "border-slate-200 bg-slate-100" : "bg-[#0f172a] border-slate-800"}`}>
               {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "issued_reward", l: "報酬額" }].map(b => (
-                <button key={b.v} onClick={() => setMediaSortKey(b.v)} className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.v ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}>{b.l}</button>
+                <button key={b.k} onClick={() => setMediaSortKey(b.k)} className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}>
+                  {b.l}
+                </button>
               ))}
             </div>
             <div className="space-y-3">
