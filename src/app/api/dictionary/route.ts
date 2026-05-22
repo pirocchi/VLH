@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { put, list } from "@vercel/blob";
 
-// 💡 規律：Python側のMIMIR（03_Memory）と100%同じファイルを完全共有・ロックする絶対座標
+// 💡 規律：Python側のMIMIR（03_Memory）と100%同じファイルを完全共有・ロックする絶対座標（ローカル用）
 const dictPath = path.join(process.cwd(), "..", "03_Memory", "mimir_dictionary.json");
 
-// ディレクトリ自動生成の安全弁
+// 💡 規律：Vercel Blob（クラウド環境）で管理する永続辞書の固定オブジェクト名
+const BLOB_FILENAME = "mimir_dictionary.json";
+
+// 📡 核心：現在稼働しているインフラ環境が「Vercelクラウド」であるかを冷徹に自動判定！
+const isCloud = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+
+// ディレクトリ自動生成の安全弁（ローカル用）
 const ensureDirectoryExists = (filePath: string) => {
   const dirname = path.dirname(filePath);
   if (!fs.existsSync(dirname)) {
@@ -16,12 +23,30 @@ const ensureDirectoryExists = (filePath: string) => {
 // 辞書データのサルベージ（読み込み）
 export async function GET() {
   try {
-    if (!fs.existsSync(dictPath)) {
-      return NextResponse.json({ master_partners: [] });
+    if (isCloud) {
+      // 🌐 クラウド環境：Vercel Blob（vlh-memory）から高速サルベージ！
+      const { blobs } = await list();
+      const targetBlob = blobs.find(b => b.pathname === BLOB_FILENAME);
+      
+      if (!targetBlob) {
+        // クラウド上にまだ辞書ファイルが1度も作られていない初期状態の救済回路
+        return NextResponse.json({ master_partners: [] });
+      }
+      
+      const res = await fetch(targetBlob.url, { cache: "no-store" });
+      if (!res.ok) return NextResponse.json({ master_partners: [] });
+      const data = await res.json();
+      return NextResponse.json(data);
+    } else {
+      // 🏠 ローカル環境：これまで通りPC内のローカルファイルを読み込み！
+      if (!fs.existsSync(dictPath)) {
+        return NextResponse.json({ master_partners: [] });
+      }
+      const data = fs.readFileSync(dictPath, "utf-8");
+      return NextResponse.json(JSON.parse(data));
     }
-    const data = fs.readFileSync(dictPath, "utf-8");
-    return NextResponse.json(JSON.parse(data));
   } catch (error) {
+    console.error("🚨 Dictionary GET Error:", error);
     return NextResponse.json({ master_partners: [] });
   }
 }
@@ -30,10 +55,24 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    ensureDirectoryExists(dictPath);
-    fs.writeFileSync(dictPath, JSON.stringify(body, null, 2), "utf-8");
-    return NextResponse.json({ success: true });
+
+    if (isCloud) {
+      // 🌐 クラウド環境：ReadOnlyな物理ディスクを完全パージし、Vercel Blobへ直接上書き保存！！！
+      // addRandomSuffix: false により、URLやファイルパスのランダム肥大化を永久パージ。
+      const blob = await put(BLOB_FILENAME, JSON.stringify(body, null, 2), {
+        access: "public",
+        addRandomSuffix: false,
+        contentType: "application/json",
+      });
+      return NextResponse.json({ success: true, url: blob.url });
+    } else {
+      // 🏠 ローカル環境：これまで通り社内PCの物理ディスクへ永続書き込み！
+      ensureDirectoryExists(dictPath);
+      fs.writeFileSync(dictPath, JSON.stringify(body, null, 2), "utf-8");
+      return NextResponse.json({ success: true });
+    }
   } catch (error: any) {
+    console.error("🚨 Dictionary POST Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
