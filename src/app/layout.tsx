@@ -154,7 +154,7 @@ export default function RootLayout({
 
               {/* 🚀 メインコンテンツエリア：💡 最終調停！h-fullを完全排除し、純粋な flex-1 overflow-y-auto のみに換装！
                   これでモバイル時のメニュー消滅バグ・最下部見切れバグは宇宙の塵となって消滅します！ */}
-              <main className="flex-1 overflow-y-auto scroll-smooth pb-12 md:pb-0">
+              <main className="flex-1 overflow-y-auto scroll-smooth pb-32 md:pb-0">
                 <div className="p-4 sm:p-8">
                   {children}
                 </div>
