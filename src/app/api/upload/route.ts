@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     let combinedNormalizedList: any[] = [];
 
-    // 🏛️ 絶対ガバナンス：クラウドが初回で空の場合でも、まずはローカルPCの全歴史JSONをベース財産として100%死守ロード！
+    // 絶対ガバナンス：クラウドが初回で空の場合でも、まずはローカルPCの全歴史JSONをベース財産として100%死守ロード！
     if (fs.existsSync(MEMORY_JSON_PATH)) {
       try {
         const localData = fs.readFileSync(MEMORY_JSON_PATH, "utf-8");
@@ -82,11 +82,12 @@ export async function POST(req: NextRequest) {
       const escapedPath = safeTmpPath.replace(/\\/g, "/");
       const servicePath = path.join(CONSOLE_ROOT, "..", "02_Services").replace(/\\/g, "/");
       
-      // 💡 安全防衛：Vercelクラウド環境（Python不在）で叩かれた場合は、環境エラーとして安全に弾いてデータを守るガード！
       try {
         const execCommand = `python -c "import sys, json; sys.path.append('${servicePath}'); from brynhild import BrynhildInjector; inj = BrynhildInjector(); print(json.dumps(inj.detect_and_parse('${escapedPath}')))"`;
         
-        const { stdout, stderr } = await execAsync(execCommand);
+        // 💡 改善①：{ windowsHide: true } オプションをインジェクション！！！
+        // これにより、Windowsの黒い画面（cmd.exe）の開閉ポップアップを1ミリも露出させず、完全ステルス（裏側バックグラウンド）でサイレント秒殺処理します！
+        const { stdout, stderr } = await execAsync(execCommand, { windowsHide: true });
         if (fs.existsSync(safeTmpPath)) fs.unlinkSync(safeTmpPath);
 
         if (stderr && !stdout) throw new Error(stderr);
@@ -130,7 +131,8 @@ export async function POST(req: NextRequest) {
     // クラウド（Vercel Blob）へ大統一JSONを打ち上げ
     if (combinedNormalizedList.length > 0) {
       await put("vlh_normalized_performance.json", JSON.stringify(combinedNormalizedList, null, 2), {
-        access: "public",
+        // 💡 改善②：最高司令官が創設してくださった Private 独立倉庫に合わせ、アクセス規律を完璧に "private" へ適合調停！！！
+        access: "private",
         addRandomSuffix: false,
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
