@@ -91,39 +91,37 @@ export default function VLHDashboardPage() {
       if (tokutanFilter === "tokutan" && row.cpa <= 6000) return false;
       if (tokutanFilter === "normal" && row.cpa > 6000) return false;
 
-      if (!row.date) return true; 
+      if (!row.date) return true;
 
-      // 💡 改善：バグの温床になっていた diffDays 計算を完全廃止！！！
-      // タイムスタンプ（ミリ秒）ベースの絶対不等式による、直感的かつ確実な日付範囲調停規律へ換装。
-      const rowDate = getStartOfDay(new Date(row.date));
-      const rowTime = rowDate.getTime();
+      // 💡 最終調停：あらゆる日付文字列（YYYYMMDD, YYYY/MM/DD等）を確実にDate化する最強正規化規律
+      const dateStr = String(row.date);
+      let d: Date;
+      if (dateStr.length === 8 && /^\d+$/.test(dateStr)) {
+        // YYYYMMDD 形式を正規解釈
+        d = new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)));
+      } else {
+        d = new Date(dateStr);
+      }
+      
+      const rowTime = getStartOfDay(d).getTime();
       const todayTime = startOfToday.getTime();
       const oneDayMs = 1000 * 60 * 60 * 24;
 
       switch (filterRange) {
-        case "yesterday": 
-          return rowTime === todayTime - oneDayMs;
-        case "7d": 
-          return rowTime >= todayTime - (7 * oneDayMs) && rowTime <= todayTime;
-        case "14d": 
-          return rowTime >= todayTime - (14 * oneDayMs) && rowTime <= todayTime;
-        case "30d": 
-          return rowTime >= todayTime - (30 * oneDayMs) && rowTime <= todayTime;
-        case "1y": 
-          return rowTime >= todayTime - (365 * oneDayMs) && rowTime <= todayTime;
-        case "thisMonth":
-          return rowDate.getMonth() === now.getMonth() && rowDate.getFullYear() === now.getFullYear();
+        case "yesterday": return rowTime === todayTime - oneDayMs;
+        case "7d": return rowTime >= todayTime - (7 * oneDayMs) && rowTime <= todayTime;
+        case "14d": return rowTime >= todayTime - (14 * oneDayMs) && rowTime <= todayTime;
+        case "30d": return rowTime >= todayTime - (30 * oneDayMs) && rowTime <= todayTime;
+        case "1y": return rowTime >= todayTime - (365 * oneDayMs) && rowTime <= todayTime;
+        case "thisMonth": return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         case "lastMonth":
           const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          return rowDate.getMonth() === lm.getMonth() && rowDate.getFullYear() === lm.getFullYear();
+          return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
         case "custom":
           if (!customRange.start || !customRange.end) return true;
-          const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
-          const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
-          return rowTime >= startLimit && rowTime <= endLimit;
+          return rowTime >= getStartOfDay(new Date(customRange.start)).getTime() && rowTime <= getStartOfDay(new Date(customRange.end)).getTime();
         case "all":
-        default: 
-          return true; // 全件通過
+        default: return true;
       }
     });
   }, [performanceData, filterRange, customRange, selectedAsp, searchMedia, tokutanFilter]);

@@ -25,12 +25,38 @@ export default function RootLayout({
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
   const [activeTheme, setActiveTheme] = useState<"light" | "dark">("dark");
 
+  // 🏛️ 規律：全軍のマスターメニュー配列を定義（アップロードにフラグを装填）
+  const rawMenuItems = [
+    { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
+    { name: "パートナー別詳細", path: "/partners", icon: Users },
+    { name: "パートナー紐付け設定", path: "/dictionary", icon: BookOpen },
+    { name: "ASP別詳細分析", path: "/asp", icon: Layers },
+    { name: "特単管理", path: "/tokutan", icon: Crown },
+    { name: "データ入庫（CSV）", path: "/upload", icon: Upload, isUploadMenu: true },
+  ];
+
+  // 💡 改善：初期状態は「クラウド環境用（アップロード抜き）」を正としてセットしておく！
+  // これにより、サーバービルド時とクライアントマウント時の不一致警告（Hydration Mismatch）を100%永久パージします！
+  const [menuItems, setMenuItems] = useState<any[]>(
+    rawMenuItems.filter(item => !item.isUploadMenu)
+  );
+
   useEffect(() => {
     setMounted(true);
     const savedMode = localStorage.getItem("vlh-theme-mode") as "light" | "dark" | "auto";
     if (savedMode) {
       setThemeMode(savedMode);
     }
+
+    // 📡 核心：ブラウザが目覚めた瞬間、現在稼働しているドメイン（ホスト名）を冷徹にスキャン！
+    const hostname = window.location.hostname;
+    const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.");
+
+    if (isLocal) {
+      // 🏠 社内PC（ローカル開発環境）であれば、データ入庫（CSV）を含むフルスペック陣形を展開！
+      setMenuItems(rawMenuItems);
+    }
+    // 🌐 クラウド（Vercel本番）であれば、初期状態の「入庫抜きメニュー」がそのまま維持され、影も形も露出しません。
   }, []);
 
   useEffect(() => {
@@ -60,15 +86,6 @@ export default function RootLayout({
 
   const isLight = activeTheme === "light";
 
-  const menuItems = [
-    { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
-    { name: "パートナー別詳細", path: "/partners", icon: Users },
-    { name: "パートナー紐付け設定", path: "/dictionary", icon: BookOpen },
-    { name: "ASP別詳細分析", path: "/asp", icon: Layers },
-    { name: "特単管理", path: "/tokutan", icon: Crown },
-    { name: "データ入庫（CSV）", path: "/upload", icon: Upload },
-  ];
-
   return (
     <html lang="ja" className="h-full">
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
@@ -82,7 +99,7 @@ export default function RootLayout({
               <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
                 <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
                 <div className="flex flex-col">
-                  <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">VLH v2.5 Console</span>
+                  <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">VLH v2.8 Console</span>
                 </div>
               </div>
 
@@ -152,8 +169,7 @@ export default function RootLayout({
                 </nav>
               </header>
 
-              {/* 🚀 メインコンテンツエリア：💡 最終調停！h-fullを完全排除し、純粋な flex-1 overflow-y-auto のみに換装！
-                  これでモバイル時のメニュー消滅バグ・最下部見切れバグは宇宙の塵となって消滅します！ */}
+              {/* 🚀 メインコンテンツエリア */}
               <main className="flex-1 overflow-y-auto scroll-smooth pb-32 md:pb-0">
                 <div className="p-4 sm:p-8">
                   {children}
