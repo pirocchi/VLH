@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   Layers, MousePointer, Percent, ShoppingBag, DollarSign, Eye, 
   BarChart3, TrendingUp, Filter, Search, ShieldAlert,
-  Coins, ArrowUpRight, Target, Flame, ChevronUp, ChevronDown
+  Coins, ArrowUpRight, Target, Flame, ChevronUp, ChevronDown,
+  Users
 } from "lucide-react";
 
 // --- サブコンポーネント: 指標名が大きく、単位が値と完全合体した目に優しい「新・小島」 ---
