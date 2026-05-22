@@ -16,7 +16,6 @@ export default function VLHDictionaryPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success'|'error'|null, msg: string }>({ type: null, msg: "" });
 
-  // 💡 改善：APIのURLパスも完全に「/api/dictionary」へ隠蔽・ローカライズ！
   useEffect(() => {
     const fetchDict = async () => {
       try {
@@ -26,7 +25,7 @@ export default function VLHDictionaryPage() {
           setDictionary(data);
         }
       } catch (e) {
-        console.error("名寄せデータベースの読み込みに失敗しました。");
+        console.error("データ通信に失敗しました。");
       }
     };
     fetchDict();
@@ -41,7 +40,7 @@ export default function VLHDictionaryPage() {
         body: JSON.stringify(updatedDict),
       });
       if (res.ok) {
-        setStatus({ type: 'success', msg: "名寄せ設定が正常に反映・保存されました！" });
+        setStatus({ type: 'success', msg: "紐付け設定が正常に反映・保存されました！" });
         setTimeout(() => setStatus({ type: null, msg: "" }), 3000);
       }
     } catch (e) {
@@ -81,7 +80,7 @@ export default function VLHDictionaryPage() {
   };
 
   const removeMaster = (masterIdx: number) => {
-    if (!confirm("この統合パートナーを削除しますか？紐付けデータが失われます。")) return;
+    if (!confirm("この統合設定を削除しますか？紐付けデータが失われます。")) return;
     const updated = { ...dictionary };
     updated.master_partners.splice(masterIdx, 1);
     setDictionary(updated);
@@ -90,14 +89,14 @@ export default function VLHDictionaryPage() {
 
   return (
     <div className="w-full">
+      {/* 👑 改善：不快な横文字サブタイトルを完全パージ、タイトルを「パートナー紐付け設定」へ大換装！ */}
       <header className={`px-8 py-6 mb-8 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 border transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30">
             <BookOpen size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">名寄せ管理</h1>
-            <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-widest">Master Partner Mapping Console</p>
+            <h1 className="text-2xl font-black tracking-tight">パートナー紐付け設定</h1>
           </div>
         </div>
         
@@ -114,10 +113,10 @@ export default function VLHDictionaryPage() {
         {/* 左翼：新規登録カード */}
         <div className={`p-8 rounded-3xl border h-fit sticky top-8 transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
           <h2 className="text-lg font-black mb-6 flex items-center gap-2">
-            <Plus size={20} className="text-indigo-500" /> 新規統合パートナー作成
+            <Plus size={20} className="text-indigo-500" /> 新規グループを作成
           </h2>
           <p className="text-xs text-slate-400 font-bold mb-4 leading-relaxed">
-            複数のASPや異なるメディア名で活動しているパートナーを、1つの「正式名称」でまとめるための器を作成します。
+            複数のASPや異なるメディア名で活動しているパートナーを、1つの「まとめ用の名前」で合算するための箱を作成します。
           </p>
           <div className="space-y-4">
             <input 
@@ -132,7 +131,7 @@ export default function VLHDictionaryPage() {
               disabled={!newMasterName || loading}
               className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
             >
-              <Save size={20} /> 統合パートナーを登録
+              <Save size={20} /> グループ名を登録
             </button>
           </div>
 
@@ -142,28 +141,28 @@ export default function VLHDictionaryPage() {
               <div>
                 <p className="text-sm font-black mb-1">システム管理規律</p>
                 <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
-                  ここで登録した「正式名称」が、パートナー別詳細や全体ダッシュボードでの表示名となります。
+                  ここで登録した「まとめ用の名前」が、パートナー別詳細画面やランキングでの統合表示名となります。
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 右翼：一覧 */}
+        {/* 右翼：紐付け設定一覧 */}
         <div className="lg:col-span-2 space-y-6">
           {dictionary.master_partners.length === 0 ? (
             <div className="p-20 text-center border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-[40px]">
               <div className="w-20 h-20 bg-slate-100 dark:bg-[#1e293b] rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
                 <Search size={40} />
               </div>
-              <p className="text-lg font-black text-slate-400">統合パートナーがまだ登録されていません。</p>
+              <p className="text-lg font-black text-slate-400">紐付け用グループがまだ登録されていません。</p>
             </div>
           ) : (
             dictionary.master_partners.map((master: any, mIdx: number) => (
               <div key={mIdx} className={`p-8 rounded-[32px] border group transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 uppercase tracking-tighter">Master Partner</span>
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 uppercase tracking-tighter">Unified Target</span>
                     <h3 className="text-xl font-black mt-2 text-slate-900 dark:text-white">{master.real_name}</h3>
                   </div>
                   <button 
@@ -189,7 +188,7 @@ export default function VLHDictionaryPage() {
                   <div className="flex gap-2">
                     <input 
                       type="text"
-                      placeholder="紐付けたい名前 or メディアIDを入力..."
+                      placeholder="まとめたいASP側のサイト名、またはメディアIDを入力してEnter..."
                       className="flex-1 px-4 py-3 rounded-xl border bg-slate-50 dark:bg-[#0f172a]/50 border-slate-200 dark:border-slate-700 font-bold text-sm outline-none"
                       onKeyDown={(e: any) => {
                         if (e.key === 'Enter') {
@@ -198,9 +197,6 @@ export default function VLHDictionaryPage() {
                         }
                       }}
                     />
-                    <div className="px-4 py-3 text-xs font-black text-slate-400 flex items-center italic">
-                      Press Enter to Add
-                    </div>
                   </div>
                 </div>
               </div>

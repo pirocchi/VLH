@@ -60,13 +60,13 @@ export default function RootLayout({
 
   const isLight = activeTheme === "light";
 
-  // 💡 改善：外部に露出するURLパスを「/dictionary」へ完全ステルス偽装！
+  // 💡 改善：ご指定通り「パートナー別詳細」の直下に「パートナー紐付け設定」を再配備！
   const menuItems = [
     { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
     { name: "パートナー別詳細", path: "/partners", icon: Users },
+    { name: "パートナー紐付け設定", path: "/dictionary", icon: BookOpen },
     { name: "ASP別詳細分析", path: "/asp", icon: Layers },
     { name: "特単管理", path: "/tokutan", icon: Crown },
-    { name: "名寄せ管理", path: "/dictionary", icon: BookOpen },
     { name: "データ入庫（CSV）", path: "/upload", icon: Upload },
   ];
 
@@ -77,7 +77,7 @@ export default function RootLayout({
           
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100">
             
-            {/* 🏰 【PC専用】左側の司令塔サイドメニュー */}
+            {/* 🏰 左側の司令塔サイドメニュー */}
             <aside className="hidden md:flex w-72 flex-shrink-0 flex flex-col border-r bg-white border-slate-200 shadow-xl dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-2xl">
               <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
                 <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
@@ -120,7 +120,7 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 🏛 saffron 【モバイル専用】常時固定トップヘッダー */}
+            {/* 🏛️ 【モバイル専用】常時固定トップヘッダー */}
             <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex flex-col border-b bg-white border-slate-200 shadow-md dark:bg-[#1e293b] dark:border-slate-800">
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700/40">
                 <div className="flex items-center gap-2">
