@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useContext } from "react";
-// 💡 規律：親のレイアウトからテーマ通信網（ThemeContext）をインポート！
 import { ThemeContext } from "../layout";
 import { 
   Layers, MousePointer, Percent, ShoppingBag, DollarSign, Eye, 
@@ -10,30 +9,42 @@ import {
   Users
 } from "lucide-react";
 
-// --- サブコンポーネント: 親のステートと100%全自動連動する「不沈の小島」 ---
-const VLHKPICard = ({ title, value, icon: Icon, colorClass, isLight }: any) => (
+// --- サブコンポーネント: 💡 改善！モバイルでの見切れを2000%防ぐアトミック・タイポグラフィ小島 ---
+const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
   <div className={`
-    ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
-    p-6 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
+    ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
+    p-5 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
   `}>
-    <div className="flex justify-between items-start">
-      <span className={`text-sm font-black tracking-wider ${isLight ? "text-slate-800" : "text-slate-200"}`}>
+    <div className="flex justify-between items-start gap-2">
+      {/* 指標名はベテランのために視認性の高いサイズをキープ */}
+      <span className="text-sm font-black tracking-wider block">
         {title}
       </span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}>
         <Icon size={16} />
       </div>
     </div>
-    <div className="mt-4">
-      <span className={`text-3xl font-black tracking-tight block ${isLight ? "text-slate-900" : "text-white"}`}>
+    
+    {/* 💡 核心：モバイル時はフォントを text-xl〜2xl に抑え、単位（￥や％）を足元に小さく添える不沈構造 */}
+    <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
+      {prefix && (
+        <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70">
+          {prefix}
+        </span>
+      )}
+      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight">
         {value}
       </span>
+      {suffix && (
+        <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70">
+          {suffix}
+        </span>
+      )}
     </div>
   </div>
 );
 
 export default function VLHDashboardPage() {
-  // 💡 【核心】親サイドバーのテーマ状態をリアルタイムで直接ハック！
   const { activeTheme } = useContext(ThemeContext);
   const isLight = activeTheme === "light";
 
@@ -188,7 +199,7 @@ export default function VLHDashboardPage() {
     <div className="w-full">
       
       {/* 👑 ヘッダー */}
-      <header className={`px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
+      <header className={`px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-black tracking-tight">全体ダッシュボード</h1>
         </div>
@@ -196,7 +207,7 @@ export default function VLHDashboardPage() {
 
       {/* 🛠️ コントロールパネル */}
       <div className="mb-5">
-        <div className={`p-6 rounded-2xl border flex flex-col gap-5 shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-lg"}`}>
+        <div className={`p-6 rounded-2xl border flex flex-col gap-5 shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-lg"}`}>
           
           <div className={`flex flex-wrap items-center gap-4 border-b pb-4 ${isLight ? "border-slate-200" : "border-slate-700/50"}`}>
             <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
@@ -204,13 +215,7 @@ export default function VLHDashboardPage() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {[{l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
-                <button 
-                  key={range.v} 
-                  onClick={() => setFilterRange(range.v)} 
-                  className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-md" : (isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-[#0f172a] text-slate-400 hover:text-white")}`}
-                >
-                  {range.l}
-                </button>
+                <button key={range.v} onClick={() => setFilterRange(range.v)} className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-md" : (isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-[#0f172a] text-slate-400 hover:text-white")}`}>{range.l}</button>
               ))}
             </div>
             {filterRange === "custom" && (
@@ -250,27 +255,26 @@ export default function VLHDashboardPage() {
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase">■ 基礎成果セクション</div>
+          {/* 💡 改善：prefix / suffix を個別に渡し、モバイル専用のフォント補正を起動 */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <VLHKPICard title="インプレッション数" value={`${summary.impressions.toLocaleString()}回`} icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
-            <VLHKPICard title="クリック数" value={`${summary.clicks.toLocaleString()}回`} icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
-            <VLHKPICard title="クリック率" value={`${summary.ctr}％`} icon={Percent} colorClass="text-purple-500 bg-purple-500" isLight={isLight} />
-            <VLHKPICard title="コンバージョン数" value={`${summary.issued_count.toLocaleString()}件`} icon={ShoppingBag} colorClass="text-green-500 bg-green-500" isLight={isLight} />
-            <VLHKPICard title="コンバージョン率" value={`${summary.cvr}％`} icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
+            <VLHKPICard title="インプレッション数" value={summary.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
+            <VLHKPICard title="クリック数" value={summary.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
+            <VLHKPICard title="クリック率" value={summary.ctr.toString()} suffix="％" icon={Percent} colorClass="text-purple-500 bg-purple-500" isLight={isLight} />
+            <VLHKPICard title="コンバージョン数" value={summary.issued_count.toLocaleString()} suffix="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" isLight={isLight} />
+            <VLHKPICard title="コンバージョン率" value={summary.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
           </div>
           <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <VLHKPICard title="報酬額" value={`￥${Math.round(summary.issued_reward).toLocaleString()}`} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
-            <VLHKPICard title="売上" value={`￥${Math.round(summary.revenue).toLocaleString()}`} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
-            <VLHKPICard title="ROAS" value={`${summary.roas}％`} icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
-            <VLHKPICard title="CPM" value={`￥${Math.round(summary.current_cpm).toLocaleString()}`} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
-            <VLHKPICard title="CPC" value={`￥${Math.round(summary.cpc).toLocaleString()}`} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
-            <VLHKPICard title="CPA" value={`￥${Math.round(summary.cpa).toLocaleString()}`} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
+            <VLHKPICard title="報酬額" prefix="￥" value={Math.round(summary.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
+            <VLHKPICard title="売上" prefix="￥" value={Math.round(summary.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
+            <VLHKPICard title="ROAS" value={summary.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
+            <VLHKPICard title="CPM" prefix="￥" value={Math.round(summary.current_cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
+            <VLHKPICard title="CPC" prefix="￥" value={Math.round(summary.cpc).toLocaleString()} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
+            <VLHKPICard title="CPA" prefix="￥" value={Math.round(summary.cpa).toLocaleString()} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          
-          {/* ASP別レポート：Reactの力で強制切替 */}
           <div className={`xl:col-span-2 border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
             <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>
             <div className="overflow-x-auto">
@@ -301,18 +305,11 @@ export default function VLHDashboardPage() {
             </div>
           </div>
 
-          {/* 効率ランキング */}
           <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-transparent text-slate-700 shadow-md" : "bg-[#1e293b] border-slate-800 text-slate-300 shadow-xl"}`}>
             <h3 className={`text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider ${isLight ? "text-slate-800" : "text-white"}`}><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
             <div className={`grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black mb-4 ${isLight ? "border-slate-200 bg-slate-100" : "bg-[#0f172a] border-slate-800"}`}>
               {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "issued_reward", l: "報酬額" }].map(b => (
-                <button 
-                  key={b.k} 
-                  onClick={() => setMediaSortKey(b.k)} 
-                  className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}
-                >
-                  {b.l}
-                </button>
+                <button key={b.v} onClick={() => setMediaSortKey(b.v)} className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.v ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}>{b.l}</button>
               ))}
             </div>
             <div className="space-y-3">
@@ -320,7 +317,7 @@ export default function VLHDashboardPage() {
                 <div key={idx} className={`p-4 rounded-xl flex justify-between items-center border ${isLight ? "bg-slate-50 border-slate-200" : "bg-[#0f172a]/40 border-slate-800"}`}>
                   <div className="min-w-0 flex-grow pr-3">
                     <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-600/10 text-indigo-500 border border-indigo-500/20">第 {idx+1} 位</span>
-                    <p className={`text-base font-black truncate mt-2 ${isLight ? "text-slate-900" : "text-white"}`}>{media.media_name}</p>
+                    <p className="text-base font-black truncate mt-2 text-slate-900 dark:text-white">{media.media_name}</p>
                     <div className={`py-1 font-black flex items-center gap-1.5 text-xs ${isLight ? "text-slate-700" : "text-slate-300"}`}><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{media.asp}</div>
                   </div>
                   <div className="text-right flex-shrink-0 text-xs font-black space-y-0.5 border-l border-slate-700/20 pl-4 min-w-[105px]">
