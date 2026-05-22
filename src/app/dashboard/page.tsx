@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-// 💡 改善：最上段に Users を正式兵籍登録し、ビルドクラッシュを粉砕！
+// 💡 規律：Usersアイコンのインポート漏れも完全に永久防衛
 import { 
   Layers, MousePointer, Percent, ShoppingBag, DollarSign, Eye, 
   BarChart3, TrendingUp, Filter, Search, ShieldAlert,
@@ -9,7 +9,7 @@ import {
   Users
 } from "lucide-react";
 
-// --- サブコンポーネント: サイドバーの切替と100%配色連動する目に優しい「新・小島」 ---
+// --- サブコンポーネント: htmlタグのlight/darkクラスと100%全自動連動する「真の小島」 ---
 const VLHKPICard = ({ title, value, icon: Icon, colorClass }: any) => (
   <div className="bg-white border-slate-200/80 shadow-md text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-xl dark:text-slate-100 p-6 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]">
     <div className="flex justify-between items-start">
@@ -179,14 +179,14 @@ export default function VLHDashboardPage() {
   return (
     <div className="w-full">
       
-      {/* 👑 改善：くどい「VLH」ロゴバッジを完全撤廃、究極にシンプルなタイトルへ換装 */}
+      {/* 👑 ヘッダー：Tailwindのダークモードクラスに完全移行 */}
       <header className="px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border bg-white border-slate-200 text-slate-800 shadow-md dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-black tracking-tight">全体ダッシュボード</h1>
         </div>
       </header>
 
-      {/* 🛠️ コントロールパネル：Tailwindクラスでテーマ完全同期 */}
+      {/* 🛠️ コントロールパネル */}
       <div className="mb-5">
         <div className="p-6 rounded-2xl border flex flex-col gap-5 bg-white border-slate-200 text-slate-800 shadow-md dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-lg">
           
@@ -196,7 +196,7 @@ export default function VLHDashboardPage() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {[{l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
-                <button key={range.v} onClick={() => setFilterRange(range.v)} className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0f172a] dark:text-slate-400 dark:hover:text-white"}`}>{range.l}</button>
+                <button key={range.v} onClick={() => setFilterRange(range.v)} className="px-3 py-2 rounded-lg text-xs font-black transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0f172a] dark:text-slate-400 dark:hover:text-white ui-selected:bg-indigo-600 ui-selected:text-white">{range.l}</button>
               ))}
             </div>
             {filterRange === "custom" && (
@@ -255,6 +255,8 @@ export default function VLHDashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          {/* 📊 ASP別レポート：isLight三項演算子を全パージし、Tailwind dark: で完全自動調停 */}
           <div className="xl:col-span-2 border rounded-2xl p-6 overflow-hidden bg-white border-slate-200 text-slate-700 shadow-md dark:bg-[#1e293b] dark:border-slate-800 dark:text-slate-300 dark:shadow-xl">
             <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white"><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>
             <div className="overflow-x-auto">
@@ -285,16 +287,17 @@ export default function VLHDashboardPage() {
             </div>
           </div>
 
+          {/* 🏔️ 効率ランキング：こちらも完全自動調停へ昇華 */}
           <div className="border rounded-2xl p-6 overflow-hidden bg-white border-slate-200 text-slate-700 shadow-md dark:bg-[#1e293b] dark:border-slate-800 dark:text-slate-300 dark:shadow-xl">
             <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white"><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
             <div className="grid grid-cols-4 gap-1 p-1 rounded-xl border border-slate-200 bg-slate-100 text-[10px] font-black dark:bg-[#0f172a] dark:border-slate-800 mb-4">
               {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "issued_reward", l: "報酬額" }].map(btn => (
-                <button key={btn.k} onClick={() => setMediaSortKey(btn.k)} className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === btn.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-400"}`}>{btn.l}</button>
+                <button key={btn.k} onClick={() => setMediaSortKey(btn.k)} className="py-1.5 rounded-lg text-center transition-all text-slate-500 hover:text-slate-400 ui-selected:bg-indigo-600 ui-selected:text-white">{btn.l}</button>
               ))}
             </div>
             <div className="space-y-3">
               {sortedMedias.map((media: any, idx: number) => (
-                <div key={idx} className="p-4 rounded-xl flex justify-between items-center border bg-slate-50 border-slate-200 dark:bg-[#0f172a]/40 dark:border-slate-800">
+                <div key={idx} className="p-4 rounded-xl flex justify-between items-center border border-slate-200 bg-slate-50 dark:bg-[#0f172a]/40 dark:border-slate-800">
                   <div className="min-w-0 flex-grow pr-3">
                     <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-600/10 text-indigo-500 border border-indigo-500/20">第 {idx+1} 位</span>
                     <p className="text-base font-black truncate mt-2 text-slate-900 dark:text-white">{media.media_name}</p>
