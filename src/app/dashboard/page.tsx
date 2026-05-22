@@ -85,7 +85,6 @@ export default function VLHDashboardPage() {
 
       return { ...row, revenue, ctr, cvr, roas, cpa, cpc, cpm };
     }).filter(row => {
-      // 1. 各種メタフィルタリング
       if (selectedAsp !== "all" && row.asp !== selectedAsp) return false;
       if (searchMedia && !row.media_name.toLowerCase().includes(searchMedia.toLowerCase()) && !row.media_id.toLowerCase().includes(searchMedia.toLowerCase())) return false;
       if (tokutanFilter === "tokutan" && row.cpa <= 6000) return false;
@@ -93,11 +92,10 @@ export default function VLHDashboardPage() {
 
       if (!row.date) return true;
 
-      // 💡 最終調停：あらゆる日付文字列（YYYYMMDD, YYYY/MM/DD等）を確実にDate化する最強正規化規律
+      // 💡 改善：全期間対応の絶対日付正規化規律
       const dateStr = String(row.date);
       let d: Date;
       if (dateStr.length === 8 && /^\d+$/.test(dateStr)) {
-        // YYYYMMDD 形式を正規解釈
         d = new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)));
       } else {
         d = new Date(dateStr);
@@ -106,20 +104,26 @@ export default function VLHDashboardPage() {
       const rowTime = getStartOfDay(d).getTime();
       const todayTime = startOfToday.getTime();
       const oneDayMs = 1000 * 60 * 60 * 24;
+      
+      // 今日の日付から見て、データが何日前のものかを算出 (例:今日が22日、データが20日なら2日前のもの)
+      const diffDays = Math.floor((todayTime - rowTime) / oneDayMs);
 
       switch (filterRange) {
-        case "yesterday": return rowTime === todayTime - oneDayMs;
-        case "7d": return rowTime >= todayTime - (7 * oneDayMs) && rowTime <= todayTime;
-        case "14d": return rowTime >= todayTime - (14 * oneDayMs) && rowTime <= todayTime;
-        case "30d": return rowTime >= todayTime - (30 * oneDayMs) && rowTime <= todayTime;
-        case "1y": return rowTime >= todayTime - (365 * oneDayMs) && rowTime <= todayTime;
-        case "thisMonth": return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        case "yesterday": return diffDays === 1;
+        case "7d": return diffDays >= 0 && diffDays <= 7;
+        case "14d": return diffDays >= 0 && diffDays <= 14;
+        case "30d": return diffDays >= 0 && diffDays <= 30;
+        case "1y": return diffDays >= 0 && diffDays <= 365;
+        case "thisMonth":
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         case "lastMonth":
           const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
           return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
         case "custom":
           if (!customRange.start || !customRange.end) return true;
-          return rowTime >= getStartOfDay(new Date(customRange.start)).getTime() && rowTime <= getStartOfDay(new Date(customRange.end)).getTime();
+          const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
+          const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
+          return rowTime >= startLimit && rowTime <= endLimit;
         case "all":
         default: return true;
       }
