@@ -55,12 +55,12 @@ export default function RootLayout({
           {/* 🏰 左側の司令塔：共通サイドメニュー・アイランド */}
           <aside className={`w-72 flex-shrink-0 flex flex-col border-r transition-all duration-500 ${isLight ? "bg-white border-slate-200 shadow-xl" : "bg-[#1e293b] border-slate-800 shadow-2xl"}`}>
             
-            {/* ロゴエリア */}
+            {/* 💡 改善：司令官の指定通りブランド名を更新 */}
             <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
               <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
               <div className="flex flex-col">
-                <span className={`text-sm font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>Valhalla</span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Intelligence</span>
+                <span className={`text-sm font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>VLH v2.5 Console</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">Valhalla Operation</span>
               </div>
             </div>
 
@@ -87,7 +87,7 @@ export default function RootLayout({
               })}
             </nav>
 
-            {/* 下段：テーマ切替・フッター */}
+            {/* 下段：テーマ切替・フッター（規律：© Arrow8 inc.） */}
             <div className={`p-6 border-t ${isLight ? "border-slate-100" : "border-slate-800"}`}>
               <div className={`flex p-1.5 rounded-2xl ${isLight ? "bg-slate-100" : "bg-[#0f172a]"}`}>
                 {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
@@ -101,12 +101,12 @@ export default function RootLayout({
                 ))}
               </div>
               <p className="text-center text-[10px] font-bold text-slate-500 mt-6 tracking-widest uppercase">
-                © Arrow8 Intelligence
+                © Arrow8 inc.
               </p>
             </div>
           </aside>
 
-          {/* 🚀 メインコンテンツ・アイランド：ここが各ページで切り替わる */}
+          {/* 🚀 メインコンテンツ・アイランド */}
           <main className="flex-1 h-full overflow-y-auto scroll-smooth">
             <div className="p-4 sm:p-8">
               {children}
