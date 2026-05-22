@@ -3,14 +3,16 @@ import fs from "fs";
 import path from "path";
 import { put, list } from "@vercel/blob";
 
+// 💡 宇宙絶対規律：このAPIルートが「静的ファイル」にコンパイルされるのを100%永久パージし、常に最新のBlobを強制フェッチさせる命令！
+export const dynamic = "force-dynamic";
+
 // 💡 規律：Python側のMIMIR（03_Memory）と100%同じファイルを完全共有・ロックする絶対座標（ローカル用）
 const dictPath = path.join(process.cwd(), "..", "03_Memory", "mimir_dictionary.json");
 
 // 💡 規律：Vercel Blob（クラウド環境）で管理する永続辞書の固定オブジェクト名
 const BLOB_FILENAME = "mimir_dictionary.json";
 
-// 📡 核心：NODE_ENVを完全パージ！Vercelのインフラ上で動いている時だけ確実にtrueになる一撃判定！
-// これによりローカルPCでの「npm run build」運用時は100%falseになり、ローカルディスクへ無事帰還します！
+// 📡 核心：Vercelのインフラ上で動いている時だけ確実にtrueになる一撃判定！
 const isCloud = process.env.VERCEL === "1";
 
 // ディレクトリ自動生成の安全弁（ローカル用）
@@ -25,7 +27,7 @@ const ensureDirectoryExists = (filePath: string) => {
 export async function GET() {
   try {
     if (isCloud) {
-      // 🌐 クラウド環境：Vercel Blob（vlh-memory）から高速サルベージ！
+      // 🌐 クラウド環境：Vercel Blobからキャッシュをバイパスして超高速サルベージ！
       const { blobs } = await list();
       const targetBlob = blobs.find(b => b.pathname === BLOB_FILENAME);
       
@@ -33,12 +35,13 @@ export async function GET() {
         return NextResponse.json({ master_partners: [] });
       }
       
+      // fetch時にも cache: "no-store" を装填してブラウザキャッシュを完全破壊
       const res = await fetch(targetBlob.url, { cache: "no-store" });
       if (!res.ok) return NextResponse.json({ master_partners: [] });
       const data = await res.json();
       return NextResponse.json(data);
     } else {
-      // 🏠 ローカル環境：PC内のローカルファイルを確実に読み込み！
+      // 🏠 ローカル環境：物理ディスクのJSONファイルを確実に読み込み！
       if (!fs.existsSync(dictPath)) {
         return NextResponse.json({ master_partners: [] });
       }
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     if (isCloud) {
-      // 🌐 クラウド環境：Vercel Blobへ直接上書き保存！
+      // 🌐 クラウド環境：Vercel Blobへ直接上書き保存を執行！
       const blob = await put(BLOB_FILENAME, JSON.stringify(body, null, 2), {
         access: "public",
         addRandomSuffix: false,
