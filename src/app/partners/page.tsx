@@ -162,8 +162,7 @@ export default function VLHPartnersPage() {
 
   return (
     <div className="w-full">
-      {/* 💡 改善：モバイル固定メニューの潜り込みを防ぐため、個別ヘッダーはPCのみ表示（hidden md:flex）へ完全隔離 */}
-      <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
+      <header className="hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all bg-white border-slate-200 text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
         <h1 className="text-xl font-black tracking-tight">パートナー別詳細</h1>
       </header>
 
@@ -176,7 +175,6 @@ export default function VLHPartnersPage() {
             <span className="text-sm font-black tracking-wider">パートナー検索</span>
           </div>
 
-          {/* 💡 改善：TPOをわきまえ「すべてのASP」へ綺麗にクレンジング！ */}
           <div className="mb-3 flex items-center gap-2">
             <Filter size={12} className="text-slate-400 flex-shrink-0" />
             <select 
@@ -202,8 +200,8 @@ export default function VLHPartnersPage() {
             className="px-4 py-2.5 rounded-xl text-xs w-full border bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-700 dark:text-white dark:placeholder-slate-500 font-bold mb-4"
           />
 
-          {/* 💡 改善：PC画面（xl:）のときだけ中のリストをスクロールさせ、モバイル時は画面全体と一緒に動くよう max-h と overflow をレスポンシブ遮断！！！ */}
-          <div className="border-t border-slate-200 dark:border-slate-700/30 pt-3 xl:max-h-[500px] xl:overflow-y-auto space-y-1.5 pr-1 overflow-visible max-h-none">
+          {/* 💡 改善：数万件データ対策！モバイル時は h-80（320px）の小窓に閉じ込め、PC大画面では h-[500px] で固定スクロール！一生スクロール地獄を完全消滅 */}
+          <div className="border-t border-slate-200 dark:border-slate-700/30 pt-3 h-80 xl:h-[500px] overflow-y-auto space-y-1.5 pr-1">
             {searchedPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
@@ -230,10 +228,8 @@ export default function VLHPartnersPage() {
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
-              {/* パートナー基本情報カード */}
               <div className={`p-6 rounded-2xl border shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isLight ? "bg-white border-slate-200" : "bg-[#1e293b] border-slate-800"}`}>
                 <div>
-                  {/* 💡 改善：横ハラ英語を完全抹殺、美しき「選択中のパートナー」バッジへ統合 */}
                   <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 tracking-wider">選択中のパートナー</span>
                   <h2 className="text-xl font-black tracking-tight mt-2">{currentPartner.name}</h2>
                   <p className="text-xs text-slate-400 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
@@ -244,7 +240,6 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* 11大指標グリッド */}
               <div className="space-y-4">
                 <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-blue-500 pl-2">■ パートナー単体・基礎成果</div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -266,7 +261,6 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* ASP内訳テーブル */}
               <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
                   <Layers size={14} className="text-indigo-500" /> 出撃ASPチャンネル別・内訳レポート

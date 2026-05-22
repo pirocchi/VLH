@@ -89,8 +89,7 @@ export default function VLHDictionaryPage() {
 
   return (
     <div className="w-full">
-      {/* 💡 改善：ここも個別ヘッダーをPC専用化（hidden md:flex）へ完全隔離。横ハラ英語も一切排除 */}
-      <header className={`hidden md:flex px-8 py-6 mb-8 rounded-2xl flex justify-between items-center border transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
+      <header className="hidden md:flex px-8 py-6 mb-8 rounded-2xl flex justify-between items-center border transition-all bg-white border-slate-200 text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30">
             <BookOpen size={24} />
@@ -111,7 +110,8 @@ export default function VLHDictionaryPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* 左翼：新規登録カード */}
-        <div className={`p-8 rounded-3xl border h-fit sticky top-8 transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
+        {/* 💡 核心バグ粉砕：stickyを「lg:sticky lg:top-8」へと完全限定！！これでモバイル時の突っ張り棒ロック（島が動かない現象）が2000%消滅します！ */}
+        <div className={`p-8 rounded-3xl border h-fit lg:sticky lg:top-8 transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
           <h2 className="text-lg font-black mb-6 flex items-center gap-2">
             <Plus size={20} className="text-indigo-500" /> 新規グループを作成
           </h2>
@@ -162,8 +162,7 @@ export default function VLHDictionaryPage() {
               <div key={mIdx} className={`p-8 rounded-[32px] border group transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    {/* 💡 改善：横ハラ英語「Unified Target」を跡形もなく爆破消去！ */}
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white">{master.real_name}</h3>
+                    <h3 className="text-xl font-black mt-2 text-slate-900 dark:text-white">{master.real_name}</h3>
                   </div>
                   <button 
                     onClick={() => removeMaster(mIdx)}
