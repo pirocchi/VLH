@@ -6,13 +6,16 @@ import { put, list, del } from "@vercel/blob";
 // 💡 宇宙絶対規律：APIが静的ファイルにコンパイルされるのを100%永久パージ
 export const dynamic = "force-dynamic";
 
-// 💡 規律：Python側のMIMIR（03_Memory）と100%同じファイルを完全共有する絶対座標（ローカルバックアップ用）
+// 💡 規律：社内PC（ローカル環境）でのPython側のMIMIR（03_Memory）の絶対座標
 const dictPath = path.join(process.cwd(), "..", "03_Memory", "mimir_dictionary.json");
 
-// 💡 規律：Vercel Blobで管理する永続辞書の固定オブジェクト名
+// 💡 規律：Vercel Blob（クラウド環境）で管理する永続辞書の固定オブジェクト名
 const BLOB_FILENAME = "mimir_dictionary.json";
 
-// ディレクトリ自動生成の安全弁
+// 📡 核心：Vercelのインフラ上で動いている時だけ確実にtrueになる一撃判定！
+const isCloud = process.env.VERCEL === "1";
+
+// ディレクトリ自動生成の安全弁（ローカル用）
 const ensureDirectoryExists = (filePath: string) => {
   const dirname = path.dirname(filePath);
   if (!fs.existsSync(dirname)) {
@@ -23,46 +26,29 @@ const ensureDirectoryExists = (filePath: string) => {
 // 辞書データのサルベージ（読み込み）
 export async function GET() {
   try {
-    // 🌐 規律：ローカル・クラウド問わず、全宇宙から Vercel Blob の中央データバンクをリストアップ！
-    const { blobs } = await list();
-    const dictBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary"));
+    if (isCloud) {
+      // 🌐 クラウド環境（Vercel）：ディレクトリが違うため、Blobストレージからのみクリーンにフェッチ！
+      const { blobs } = await list();
+      const dictBlobs = blobs.filter(b => b.pathname.startsWith(BLOB_FILENAME));
 
-    if (dictBlobs.length > 0) {
-      // 💡 核心：アップロード日時が最も新しい「純度100%の最新データ」をソート
+      if (dictBlobs.length === 0) {
+        return NextResponse.json({ master_partners: [] });
+      }
+
+      // アップロード日時が最も新しいデータをソートしてフェッチ
       dictBlobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-      
-      // 最新のBlobからキャッシュを完全バイパス（no-store）して強制フェッチ！
       const res = await fetch(dictBlobs[0].url, { cache: "no-store" });
       if (!res.ok) return NextResponse.json({ master_partners: [] });
       const data = await res.json();
-
-      // 🏠 ローカルPC環境への優しさ：Blobから引いた最新データを、ローカルの物理ファイルへ自動的にバックアップ同期ダウンロード！
-      // これにより裏側のPython（ブリュンヒルド）も常に最新の紐付けをファイル経由で100%捕捉可能になります！
-      if (process.env.VERCEL !== "1") {
-        ensureDirectoryExists(dictPath);
-        fs.writeFileSync(dictPath, JSON.stringify(data, null, 2), "utf-8");
-      }
-
       return NextResponse.json(data);
     } else {
-      // 🌋 【初回自動打ち上げマイグレーション回路】
-      // もしBlob側が空っぽで、ローカルPC内に既存のJSONが存在する場合、自動でBlobへアップロード！
-      if (process.env.VERCEL !== "1" && fs.existsSync(dictPath)) {
-        console.log("🚀 [MIGRATION] ローカルの紐付け資産を検知。Vercel Blobへ自動打ち上げを開始します...");
-        const localData = fs.readFileSync(dictPath, "utf-8");
-        const parsed = JSON.parse(localData);
-
-        await put(BLOB_FILENAME, localData, {
-          access: "public",
-          addRandomSuffix: true,
-          contentType: "application/json",
-        });
-
-        return NextResponse.json(parsed);
+      // 🏠 ローカル環境（社内PC）：外部通信を一切遮断！！！100%安全に物理ディスクのみを読み込み！！！
+      // これにより、環境変数の有無や通信ラグによるローカル無効化バグが宇宙から完全消滅します！
+      if (!fs.existsSync(dictPath)) {
+        return NextResponse.json({ master_partners: [] });
       }
-
-      // Blobにもローカルにも何も無い完全初期状態の救済
-      return NextResponse.json({ master_partners: [] });
+      const data = fs.readFileSync(dictPath, "utf-8");
+      return NextResponse.json(JSON.parse(data));
     }
   } catch (error) {
     console.error("🚨 Dictionary GET Error:", error);
@@ -76,31 +62,39 @@ export async function POST(request: Request) {
     const body = await request.json();
     const jsonString = JSON.stringify(body, null, 2);
 
-    // 🌐 1. ローカルだろうがクラウドだろうが、新しい保存データは「中央データバンク（Vercel Blob）」へ直接put！！！
-    const blob = await put(BLOB_FILENAME, jsonString, {
-      access: "public",
-      addRandomSuffix: true, // CDNキャッシュを破壊するためURLを毎回変動させる
-      contentType: "application/json",
-    });
+    if (isCloud) {
+      // 🌐 クラウド環境（Vercel）：Blobへ直接上書き保存を執行！
+      const blob = await put(BLOB_FILENAME, jsonString, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: "application/json",
+      });
 
-    // 🏠 2. ローカルPC環境であれば、社内PCの物理ディスク（03_Memory）へも同時にミラーリング書き込み！
-    if (process.env.VERCEL !== "1") {
+      // 過去の古い残骸を非同期で掃討
+      try {
+        const { blobs } = await list();
+        const oldBlobs = blobs.filter(b => b.pathname.startsWith(BLOB_FILENAME) && b.url !== blob.url);
+        if (oldBlobs.length > 0) {
+          await del(oldBlobs.map(b => b.url));
+        }
+      } catch (e) { /* ログ省略 */ }
+
+      return NextResponse.json({ success: true, url: blob.url });
+    } else {
+      // 🏠 ローカル環境（社内PC）：確実に03_Memoryの物理ディスクへ即時永続書き込み！！！
+      // これにより、福本様たちの社内PCでの運用とPython（ブリュンヒルド）の互換性を絶対死守します！
       ensureDirectoryExists(dictPath);
       fs.writeFileSync(dictPath, jsonString, "utf-8");
-    }
 
-    // 🧹 3. 過去の古いゴミURLの残骸をストレージから非同期で一斉掃討
-    try {
-      const { blobs } = await list();
-      const oldBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary") && b.url !== blob.url);
-      if (oldBlobs.length > 0) {
-        await del(oldBlobs.map(b => b.url));
+      // 💡 ミラーリングパルス：もしローカルの.env等にBlobトークンがある場合のみ、バックグラウンドでクラウド側にも同期を試みる（無ければ安全にスルー）
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        try {
+          await put(BLOB_FILENAME, jsonString, { access: "public", addRandomSuffix: true, contentType: "application/json" });
+        } catch (e) { console.error("🚨 Cloud mirroring skipped"); }
       }
-    } catch (purgeError) {
-      console.error("🚨 Old blobs purge error:", purgeError);
-    }
 
-    return NextResponse.json({ success: true, url: blob.url });
+      return NextResponse.json({ success: true });
+    }
   } catch (error: any) {
     console.error("🚨 Dictionary POST Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
