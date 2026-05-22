@@ -89,19 +89,12 @@ export default function VLHDictionaryPage() {
 
   return (
     <div className="w-full">
-      <header className="hidden md:flex px-8 py-6 mb-8 rounded-2xl flex justify-between items-center border transition-all bg-white border-slate-200 text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30">
-            <BookOpen size={24} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">パートナー紐付け設定</h1>
-          </div>
-        </div>
-        
+      {/* 💡 改善：ヒロム様のご指示通り、アイコン付きの気取った大文字ヘッダーを完全爆破！
+          他の部屋と寸分の狂いもなく完全に同じ「py-5 mb-5 text-xl font-black」のシンプルタイトルへと完全規律統一！！！ */}
+      <header className="hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all bg-white border-slate-200 text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
+        <h1 className="text-xl font-black tracking-tight">パートナー紐付け設定</h1>
         {status.type && (
-          <div className={`px-6 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 font-black text-sm ${status.type === 'success' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-red-500/10 text-red-500 border border-red-500/20"}`}>
-            {status.type === 'success' ? <ShieldCheck size={18} /> : <AlertCircle size={18} />}
+          <div className={`px-4 py-1.5 rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 font-black text-xs ${status.type === 'success' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-red-500/10 text-red-500 border border-red-500/20"}`}>
             {status.msg}
           </div>
         )}
@@ -118,7 +111,6 @@ export default function VLHDictionaryPage() {
             複数のASPや異なるメディア名で活動しているパートナーを、1つの「まとめ用の名前」で合算するための箱を作成します。
           </p>
           <div className="space-y-4">
-            {/* 💡 改善：最高司令官のお名前「（渡辺）」を宇宙の彼方へパージ完了！純粋なプレースホルダーへ */}
             <input 
               type="text"
               placeholder="例：お宝脱毛特化ブログ"

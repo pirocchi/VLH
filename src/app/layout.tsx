@@ -74,12 +74,11 @@ export default function RootLayout({
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
           
-          {/* 🏔️ 全体レイアウトコンテナ（PC時は横並び、モバイル時は縦に要素を並べる柔軟な規律） */}
+          {/* 全体レイアウトコンテナ */}
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100">
             
             {/* 🏰 【PC専用】左側のサイドメニュー */}
             <aside className="hidden md:flex w-72 flex-shrink-0 flex flex-col border-r bg-white border-slate-200 shadow-xl dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-2xl">
-              {/* ロゴエリア */}
               <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
                 <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
                 <div className="flex flex-col">
@@ -87,7 +86,6 @@ export default function RootLayout({
                 </div>
               </div>
 
-              {/* ナビゲーション */}
               <nav className="flex-1 p-4 space-y-2 mt-4">
                 {menuItems.map((item) => {
                   const isActive = pathname === item.path;
@@ -110,7 +108,6 @@ export default function RootLayout({
                 })}
               </nav>
 
-              {/* PC用最下段テーマスイッチ */}
               <div className="p-6 border-t border-slate-100 dark:border-slate-800">
                 <div className={`flex p-1.5 rounded-2xl ${isLight ? "bg-slate-200" : "bg-[#0f172a]"}`}>
                   {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
@@ -123,10 +120,10 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 💡 改善：右側（メイン＆モバイルヘッダー）を内包する1つの独立したflexコンテナを創設！ */}
+            {/* 右側：メイン ＆ モバイルヘッダー統合 flex コンテナ */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
               
-              {/* 🏛️ 【モバイル専用】常時固定トップヘッダー（fixedを解除し、flex-shrink-0で最上部に堂々配置！） */}
+              {/* 🏛️ 【モバイル専用】常時固定トップヘッダー */}
               <header className="md:hidden flex-shrink-0 flex flex-col border-b bg-white border-slate-200 shadow-md dark:bg-[#1e293b] dark:border-slate-800">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700/40">
                   <div className="flex items-center gap-2">
@@ -155,9 +152,9 @@ export default function RootLayout({
                 </nav>
               </header>
 
-              {/* 🚀 メインコンテンツエリア：💡 改善！fixedが無くなったため、pt-[98px]などの地雷数値を全消去！
-                  上部のヘッダーの高さが何pxになろうが、絶対にその真下から綺麗にコンテンツが始まります！！！ */}
-              <main className="flex-1 h-full overflow-y-auto scroll-smooth pb-12 md:pb-0">
+              {/* 🚀 メインコンテンツエリア：💡 最終調停！h-fullを完全排除し、純粋な flex-1 overflow-y-auto のみに換装！
+                  これでモバイル時のメニュー消滅バグ・最下部見切れバグは宇宙の塵となって消滅します！ */}
+              <main className="flex-1 overflow-y-auto scroll-smooth pb-12 md:pb-0">
                 <div className="p-4 sm:p-8">
                   {children}
                 </div>
