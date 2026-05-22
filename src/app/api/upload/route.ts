@@ -82,7 +82,10 @@ export async function POST(req: NextRequest) {
       const YYYYMMDD = dateMatch ? dateMatch[0] : new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      const safeTmpPath = path.join(runtimeTmpDir, `vhl_upload_${Date.now()}.csv`);
+      
+      // 💡 最終調停：一時ファイル名に「元の正しいYYYYMMDD」を先頭に復活させる！！！
+      // これによりブリュンヒルドが Date.now() の数字を日付と誤認するバグが宇宙から消滅します！
+      const safeTmpPath = path.join(runtimeTmpDir, `vlh_${YYYYMMDD}_${Date.now()}.csv`);
       fs.writeFileSync(safeTmpPath, buffer);
 
       const escapedPath = safeTmpPath.replace(/\\/g, "/");
