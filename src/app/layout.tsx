@@ -25,7 +25,6 @@ export default function RootLayout({
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
   const [activeTheme, setActiveTheme] = useState<"light" | "dark">("dark");
 
-  // 🏛️ 規律：全軍のマスターメニュー配列を定義（アップロードにフラグを装填）
   const rawMenuItems = [
     { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
     { name: "パートナー別詳細", path: "/partners", icon: Users },
@@ -35,8 +34,6 @@ export default function RootLayout({
     { name: "データ入庫（CSV）", path: "/upload", icon: Upload, isUploadMenu: true },
   ];
 
-  // 💡 改善：初期状態は「クラウド環境用（アップロード抜き）」を正としてセットしておく！
-  // これにより、サーバービルド時とクライアントマウント時の不一致警告（Hydration Mismatch）を100%永久パージします！
   const [menuItems, setMenuItems] = useState<any[]>(
     rawMenuItems.filter(item => !item.isUploadMenu)
   );
@@ -48,15 +45,12 @@ export default function RootLayout({
       setThemeMode(savedMode);
     }
 
-    // 📡 核心：ブラウザが目覚めた瞬間、現在稼働しているドメイン（ホスト名）を冷徹にスキャン！
     const hostname = window.location.hostname;
     const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.");
 
     if (isLocal) {
-      // 🏠 社内PC（ローカル開発環境）であれば、データ入庫（CSV）を含むフルスペック陣形を展開！
       setMenuItems(rawMenuItems);
     }
-    // 🌐 クラウド（Vercel本番）であれば、初期状態の「入庫抜きメニュー」がそのまま維持され、影も形も露出しません。
   }, []);
 
   useEffect(() => {
@@ -82,6 +76,9 @@ export default function RootLayout({
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(activeTheme);
+    
+    // ネイティブUI（スクロールバー、セレクトボックス、日付入力など）にテーマを適用
+    root.style.colorScheme = activeTheme;
   }, [activeTheme, mounted]);
 
   const isLight = activeTheme === "light";
@@ -91,10 +88,8 @@ export default function RootLayout({
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
           
-          {/* 全体レイアウトコンテナ */}
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100">
             
-            {/* 🏰 【PC専用】左側のサイドメニュー */}
             <aside className="hidden md:flex w-72 flex-shrink-0 flex flex-col border-r bg-white border-slate-200 shadow-xl dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-2xl">
               <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
                 <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
@@ -137,10 +132,8 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 右側：メイン ＆ モバイルヘッダー統合 flex コンテナ */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
               
-              {/* 🏛️ 【モバイル専用】常時固定トップヘッダー */}
               <header className="md:hidden flex-shrink-0 flex flex-col border-b bg-white border-slate-200 shadow-md dark:bg-[#1e293b] dark:border-slate-800">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700/40">
                   <div className="flex items-center gap-2">
@@ -169,7 +162,6 @@ export default function RootLayout({
                 </nav>
               </header>
 
-              {/* 🚀 メインコンテンツエリア */}
               <main className="flex-1 overflow-y-auto scroll-smooth pb-32 md:pb-0">
                 <div className="p-4 sm:p-8">
                   {children}
