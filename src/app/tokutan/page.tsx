@@ -114,7 +114,7 @@ export default function VLHTokutanPage() {
       // 💡 財務パラメータの冷徹な算出
       const partnerProfit = cv * currentTier.net;                    // アフィリエイターの総儲け（ネット合計）
       const aspProfit = cv * (currentTier.gross - currentTier.net);   // ASPの総儲け（マージン合計）
-      const自社残し = totalRevenue - (cv * currentTier.gross);        // 自社の売上残高（本体価格 - グロス支払）
+      const 自社残し = totalRevenue - (cv * currentTier.gross);        // 自社の売上残高（本体価格 - グロス支払）
 
       return {
         ...p,
