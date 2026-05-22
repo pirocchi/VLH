@@ -4,7 +4,7 @@ import React, { useState, useEffect, createContext } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { 
-  Users, Layers, Crown, Upload, 
+  Users, Layers, Crown, Upload, BookOpen,
   Sun, Moon, Clock, LayoutDashboard, ChevronRight
 } from "lucide-react";
 import Link from "next/link";
@@ -60,11 +60,13 @@ export default function RootLayout({
 
   const isLight = activeTheme === "light";
 
+  // 💡 改善：外部に露出するURLパスを「/dictionary」へ完全ステルス偽装！
   const menuItems = [
     { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
     { name: "パートナー別詳細", path: "/partners", icon: Users },
     { name: "ASP別詳細分析", path: "/asp", icon: Layers },
     { name: "特単管理", path: "/tokutan", icon: Crown },
+    { name: "名寄せ管理", path: "/dictionary", icon: BookOpen },
     { name: "データ入庫（CSV）", path: "/upload", icon: Upload },
   ];
 
@@ -73,12 +75,10 @@ export default function RootLayout({
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
           
-          {/* 🏔️ 全体レイアウトコンテナ */}
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100">
             
             {/* 🏰 【PC専用】左側の司令塔サイドメニュー */}
             <aside className="hidden md:flex w-72 flex-shrink-0 flex flex-col border-r bg-white border-slate-200 shadow-xl dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-2xl">
-              {/* ロゴエリア */}
               <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
                 <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
                 <div className="flex flex-col">
@@ -86,7 +86,6 @@ export default function RootLayout({
                 </div>
               </div>
 
-              {/* ナビゲーションメニュー */}
               <nav className="flex-1 p-4 space-y-2 mt-4">
                 {menuItems.map((item) => {
                   const isActive = pathname === item.path;
@@ -109,17 +108,10 @@ export default function RootLayout({
                 })}
               </nav>
 
-              {/* PC用最下段 */}
               <div className="p-6 border-t border-slate-100 dark:border-slate-800">
                 <div className={`flex p-1.5 rounded-2xl ${isLight ? "bg-slate-200" : "bg-[#0f172a]"}`}>
                   {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
-                    <button 
-                      key={t.m} 
-                      onClick={() => setThemeMode(t.m as any)} 
-                      className={`flex-1 flex justify-center py-2.5 rounded-xl transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:text-slate-400"}`}
-                    >
-                      <t.i size={16} />
-                    </button>
+                    <button key={t.m} onClick={() => setThemeMode(t.m as any)} className={`flex-1 flex justify-center py-2.5 rounded-xl transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:text-slate-400"}`}><t.i size={16} /></button>
                   ))}
                 </div>
                 <p className="text-center text-[10px] font-bold text-slate-500 mt-6 tracking-widest uppercase">
@@ -128,7 +120,7 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 🏛️ 【モバイル専用】常時固定トップヘッダー ＆ 横スクロールメニュー */}
+            {/* 🏛 saffron 【モバイル専用】常時固定トップヘッダー */}
             <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex flex-col border-b bg-white border-slate-200 shadow-md dark:bg-[#1e293b] dark:border-slate-800">
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700/40">
                 <div className="flex items-center gap-2">
@@ -157,7 +149,7 @@ export default function RootLayout({
               </nav>
             </header>
 
-            {/* 🚀 メインコンテンツエリア：💡 改善！モバイル時の見切れを防ぐため、pb-28（下部防波堤）を緊急装填！！！ */}
+            {/* 🚀 メインコンテンツエリア */}
             <main className="flex-1 h-full overflow-y-auto scroll-smooth pt-[98px] pb-28 md:pt-0 md:pb-0">
               <div className="p-4 sm:p-8">
                 {children}
