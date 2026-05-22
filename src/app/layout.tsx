@@ -12,7 +12,6 @@ import { usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// 💡 規律：下階層のページへテーマ情報を生中継するための絶対通信網を創設！
 export const ThemeContext = createContext({ activeTheme: "dark" });
 
 export default function RootLayout({
@@ -21,10 +20,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  
+  // 💡 規律：ハイドレーション（画面のチラつきや初期化バグ）を防ぐための安全弁
+  const [mounted, setMounted] = useState(false);
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
   const [activeTheme, setActiveTheme] = useState<"light" | "dark">("dark");
 
+  // 1. 【初回マウント時】ブラウザの記憶倉庫から前回の設定をサルベージ
   useEffect(() => {
+    setMounted(true);
+    const savedMode = localStorage.getItem("vlh-theme-mode") as "light" | "dark" | "auto";
+    if (savedMode) {
+      setThemeMode(savedMode);
+    }
+  }, []);
+
+  // 2. 【モード変更時】記憶を即座に上書き保存 ＆ 時間軸の冷徹なパース
+  useEffect(() => {
+    if (!mounted) return;
+    
+    localStorage.setItem("vlh-theme-mode", themeMode);
+
     const evaluateTheme = () => {
       if (themeMode === "auto") {
         const hour = new Date().getHours();
@@ -33,10 +49,19 @@ export default function RootLayout({
         setActiveTheme(themeMode);
       }
     };
+
     evaluateTheme();
     const interval = setInterval(evaluateTheme, 60000);
     return () => clearInterval(interval);
-  }, [themeMode]);
+  }, [themeMode, mounted]);
+
+  // 3. メイン背景色へのクラス適用
+  useEffect(() => {
+    if (!mounted) return;
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(activeTheme);
+  }, [activeTheme, mounted]);
 
   const isLight = activeTheme === "light";
 
@@ -51,8 +76,6 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full">
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
-        
-        {/* 💡 通信網 Provider で children を包み込み、現在のテーマを強制共有！ */}
         <ThemeContext.Provider value={{ activeTheme }}>
           <div className={`flex h-screen w-full transition-colors duration-500 ${isLight ? "bg-slate-100 text-slate-800" : "bg-[#0f172a] text-slate-100"}`}>
             
