@@ -92,40 +92,42 @@ export default function VLHDashboardPage() {
 
       if (!row.date) return true;
 
-      // 💡 改善：全期間対応の絶対日付正規化規律
+      // 日付の正規化（いかなる形式も一撃でDateオブジェクト化）
       const dateStr = String(row.date);
-      let d: Date;
-      if (dateStr.length === 8 && /^\d+$/.test(dateStr)) {
-        d = new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)));
-      } else {
-        d = new Date(dateStr);
-      }
+      const d = (dateStr.length === 8 && /^\d+$/.test(dateStr)) 
+        ? new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)))
+        : new Date(dateStr);
       
-      const rowTime = getStartOfDay(d).getTime();
+      const rowTime = d.getTime();
       const todayTime = startOfToday.getTime();
       const oneDayMs = 1000 * 60 * 60 * 24;
-      
-      // 今日の日付から見て、データが何日前のものかを算出 (例:今日が22日、データが20日なら2日前のもの)
-      const diffDays = Math.floor((todayTime - rowTime) / oneDayMs);
 
+      // 💡 最終調停：現在時刻からの「経過日数」計算を捨て、「開始日」と「終了日」の絶対範囲を確定させて比較する
       switch (filterRange) {
-        case "yesterday": return diffDays === 1;
-        case "7d": return diffDays >= 0 && diffDays <= 7;
-        case "14d": return diffDays >= 0 && diffDays <= 14;
-        case "30d": return diffDays >= 0 && diffDays <= 30;
-        case "1y": return diffDays >= 0 && diffDays <= 365;
+        case "yesterday": 
+          return rowTime >= todayTime - oneDayMs && rowTime < todayTime;
+        case "7d": 
+          return rowTime >= todayTime - (7 * oneDayMs);
+        case "14d": 
+          return rowTime >= todayTime - (14 * oneDayMs);
+        case "30d": 
+          return rowTime >= todayTime - (30 * oneDayMs);
+        case "1y": 
+          return rowTime >= todayTime - (365 * oneDayMs);
         case "thisMonth":
           return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         case "lastMonth":
-          const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
+          const lmMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+          const lmYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+          return d.getMonth() === lmMonth && d.getFullYear() === lmYear;
         case "custom":
           if (!customRange.start || !customRange.end) return true;
           const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
           const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
           return rowTime >= startLimit && rowTime <= endLimit;
         case "all":
-        default: return true;
+        default: 
+          return true;
       }
     });
   }, [performanceData, filterRange, customRange, selectedAsp, searchMedia, tokutanFilter]);
