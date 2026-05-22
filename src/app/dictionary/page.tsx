@@ -13,15 +13,15 @@ export default function VLHDictionaryPage() {
 
   const [dictionary, setDictionary] = useState<any>({ master_partners: [] });
   const [newMasterName, setNewMasterName] = useState("");
-  const [loading, setLoading] = useState(true); // 💡 規律：初期状態はtrueから開始
+  const [loading, setLoading] = useState(true); 
   const [status, setStatus] = useState<{ type: 'success'|'error'|null, msg: string }>({ type: null, msg: "" });
 
   useEffect(() => {
     const fetchDict = async () => {
       try {
         setLoading(true);
-        // 💡 改善：cache: "no-store" をフロント側にも付与してブラウザキャッシュを徹底粉砕
-        const res = await fetch("/api/dictionary", { cache: "no-store" });
+        // 💡 核心：URLの末尾にタイムスタンプを強制付与し、ブラウザのしつこいキャッシュを100%大破させる！！！
+        const res = await fetch(`/api/dictionary?t=${Date.now()}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setDictionary(data);
@@ -88,12 +88,11 @@ export default function VLHDictionaryPage() {
     handleSave(updated);
   };
 
-  // 💡 規律統一：他の全ページと寸分の狂いもなく完全に一致させた、美しき共通ローディング回路をインジェクション！
+  // 💡 規律統一：共通ローディング画面
   if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">手動紐付けデータ同期中...</div>;
 
   return (
     <div className="w-full text-slate-800 dark:text-slate-200">
-      {/* 👑 ヘッダー構造の完全共通化 */}
       <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
         <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">パートナー紐付け設定</h1>
         {status.type && (
@@ -171,7 +170,6 @@ export default function VLHDictionaryPage() {
                   <div className="flex flex-wrap gap-2">
                     {master.aliases.map((alias: string, aIdx: number) => (
                       <div key={aIdx} className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-[#0f172a] rounded-xl border border-slate-200 dark:border-slate-700 group/alias">
-                        {/* 💡 改善：登録済みサイト名・メディアIDのダークモードコントラストを強制確保 */}
                         <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{alias}</span>
                         <button onClick={() => removeAlias(mIdx, aIdx)} className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400">
                           <Trash2 size={14} />
