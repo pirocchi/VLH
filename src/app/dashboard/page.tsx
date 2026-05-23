@@ -236,7 +236,7 @@ export default function VLHDashboardPage() {
           <div className="flex items-center gap-2">
             <span className="text-xs font-black tracking-wider text-amber-500 flex items-center gap-1"><Coins size={12}/> 特単指定:</span>
             <div className="flex p-0.5 rounded-xl border bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-700">
-              {[{ v: "all", l: "すべて" }, { v: "normal", l: "通常単価" }, { v: "tokutan", l: "特単適用 (CPA>6k)" }].map(b => (
+              {[{ v: "all", l: "すべて" }, { v: "normal", l: "CPA ￥6,000以下" }, { v: "tokutan", l: "CPA ￥6,000以上" }].map(b => (
                 <button key={b.v} onClick={() => setTokutanFilter(b.v)} 
                   className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${tokutanFilter === b.v ? "bg-amber-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-200"}`}>{b.l}</button>
               ))}
