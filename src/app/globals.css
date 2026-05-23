@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-/* 💡 これまでに仕込んだ個別カラーハックや !important ルールをすべて完全消滅（パージ）！ */
+/* 💡 宇宙絶対規律：Tailwind v4に対し、OSの設定ではなく「.dark」クラスを基準にダークモードを駆動せよと命じる絶対命令！ */
+@variant dark (&:where(.dark, .dark *));
+
 html,
 body {
   padding: 0;
