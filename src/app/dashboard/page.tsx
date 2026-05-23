@@ -234,7 +234,7 @@ export default function VLHDashboardPage() {
               className="px-3 py-1.5 rounded-lg text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black tracking-wider text-amber-500 flex items-center gap-1"><Coins size={12}/> 特単指定:</span>
+            <span className="text-xs font-black tracking-wider text-amber-500 flex items-center gap-1"><Coins size={12}/> パートナー指定:</span>
             <div className="flex p-0.5 rounded-xl border bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-700">
               {[{ v: "all", l: "すべて" }, { v: "normal", l: "CPA ￥6,000以下" }, { v: "tokutan", l: "CPA ￥6,000以上" }].map(b => (
                 <button key={b.v} onClick={() => setTokutanFilter(b.v)} 
