@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { put, list, del } from "@vercel/blob";
 
-// 💡 宇宙絶対規律：APIが静的コンパイルの檻に閉じ込められるのを100%永久パージ！！！
+// 💡 宇宙絶対規律：APIが静的コンパイルの檻に閉じ込められるのを100%永久パージ
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
@@ -15,20 +15,26 @@ const BLOB_FILENAME = "mimir_dictionary.json";
 // 辞書データのサルベージ（読み込み）
 export async function GET() {
   try {
-    // 核心：判定をすべて関数内部（ランタイム）へ移動！！！ビルド時の環境変数固定化の呪いを完全粉砕！！！
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     const isCloudEnv = process.env.VERCEL === "1" || !!token;
 
     if (isCloudEnv && token) {
-      // 🌐 クラウドランタイム：トークンを明示的に装填してBlobストレージをスキャン！
+      // 🌐 クラウドランタイム：トークンを使ってPrivateストア内のファイル一覧をフェッチ
       const { blobs } = await list({ token });
       const dictBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary"));
 
       if (dictBlobs.length > 0) {
-        // アップロード日時が最も新しい純度100%のデータを最優先ソート
+        // アップロード日時が最も新しいデータを最優先ソート
         dictBlobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
         
-        const res = await fetch(dictBlobs[0].url, { cache: "no-store" });
+        // 💡 核心：Privateファイルへのアクセス権を得るため、fetch時のヘッダーにBlobトークンを直接装填して強行突破！！！
+        const res = await fetch(dictBlobs[0].url, {
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
         if (res.ok) {
           const data = await res.json();
           return NextResponse.json(data);
@@ -36,7 +42,7 @@ export async function GET() {
       }
     }
 
-    // 🏠 ローカルランタイム：外部通信に1ミリも依存せず、PC内の物理ディスクを安全スキャン！
+    // 🏠 ローカルランタイム：社内PC内の物理ディスクを安全スキャン
     if (fs.existsSync(dictPath)) {
       const data = fs.readFileSync(dictPath, "utf-8");
       return NextResponse.json(JSON.parse(data));
@@ -59,9 +65,9 @@ export async function POST(request: Request) {
     const isCloudEnv = process.env.VERCEL === "1" || !!token;
 
     if (isCloudEnv && token) {
-      // 🌐 クラウドランタイム：URLを毎回変動させてCDNキャッシュを強制大破させつつ、Blobへ直接上書き保存！
+      // 🌐 クラウドランタイム：💡 accessを "private" へ絶対変更し、Privateストアの規律に完全適合！！！
       const blob = await put(BLOB_FILENAME, jsonString, {
-        access: "public",
+        access: "private", 
         addRandomSuffix: true,
         contentType: "application/json",
         token
@@ -74,11 +80,11 @@ export async function POST(request: Request) {
         if (oldBlobs.length > 0) {
           await del(oldBlobs.map(b => b.url), { token });
         }
-      } catch (e) { /* 安全にスルー */ }
+      } catch (e) { /* スルー */ }
 
       return NextResponse.json({ success: true, url: blob.url });
     } else {
-      // 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み！
+      // 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み
       const dirname = path.dirname(dictPath);
       if (!fs.existsSync(dirname)) {
         fs.mkdirSync(dirname, { recursive: true });
