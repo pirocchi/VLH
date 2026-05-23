@@ -3,25 +3,25 @@
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
-  Layers, Eye, MousePointer, Percent, ShoppingBag, TrendingUp,
+  Layers, MousePointer, Percent, ShoppingBag, TrendingUp,
   DollarSign, ArrowUpRight, Flame, Target, Coins, BarChart3,
-  Clock, CheckCircle, AlertCircle, ShieldAlert
+  Clock, CheckCircle, Eye
 } from "lucide-react";
 
-// --- サブコンポーネント: モバイル見切れ防止・KPIカード ---
-const AspKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
-  <div className={`
-    ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
-    p-5 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
-  `}>
+// --- サブコンポーネント: モバイル見切れ防止・KPIカードの大粛清 ---
+// 💡 大粛清：isLightによるカラー分岐を完全パージ！標準セマンティックデフォルト（slate）で統一
+const AspKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
+  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      <span className="text-sm font-black tracking-wider block">{title}</span>
+      {/* 💡 規律：カードタイトルは標準の補助カラー */}
+      <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">{title}</span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}><Icon size={16} /></div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70">{prefix}</span>}
-      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight">{value}</span>
-      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70">{suffix}</span>}
+      {/* 💡 核心：プレフィックス、サフィックス（￥や回）を完全に認識させるための補助カラー */}
+      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
+      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
+      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{suffix}</span>}
     </div>
   </div>
 );
@@ -42,8 +42,6 @@ export default function VLHAspPage() {
 
   const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
-  // 💡 ステート：現在詳細をハックしているターゲットASP名
   const [activeAspName, setActiveAspName] = useState<string>("A8.net");
 
   useEffect(() => {
@@ -91,7 +89,6 @@ export default function VLHAspPage() {
       }
     });
 
-    // 各指標を11大運用財務マトリクスへ増幅
     const resultList = Object.values(map).map((a: any) => {
       const cv = a.issued_count;
       const cost = a.issued_reward;
@@ -117,43 +114,39 @@ export default function VLHAspPage() {
     return resultList;
   }, [performanceData]);
 
-  // 💡 現在選択されているASPの詳細11指標オブジェクトをパース
   const currentAspData = useMemo(() => {
     const found = aspAggregatedMap.find(a => a.name === activeAspName);
     if (found) return found;
     
-    // データがまだ無い場合の安全な空初期化
     return {
       name: activeAspName, impressions: 0, clicks: 0, issued_count: 0, issued_reward: 0,
       revenue: 0, partnerCount: 0, ctr: 0, cvr: 0, roas: 0, cpa: 0, cpc: 0, cpm: 0
     };
   }, [aspAggregatedMap, activeAspName]);
 
-  // 💡 改善：前回のスペース漏れタイポ（let自社残しなど）を2000%根絶チェック済み変数群
   const currentMeta = useMemo(() => {
     return ASP_METADATA[activeAspName] || { rate: "不明", lag: "要確認", statusColor: "text-slate-400 bg-slate-50", desc: "個別契約または新規ASPチャンネルです。運用の傾向値を手動監査してください。" };
   }, [activeAspName]);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest">ASP別承認特性パース中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">ASP別承認特性パース中...</div>;
 
   return (
-    <div className="w-full">
-      {/* 👑 ヘッダー（PC専用隔離、横ハスパージ） */}
-      <header className="hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all bg-white border-slate-200 text-slate-800 dark:bg-[#1e293b] dark:border-slate-800 dark:text-white dark:shadow-xl">
+    <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
+      {/* 👑 メインヘッダーの大粛清・デフォルト回帰 */}
+      <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">ASP別詳細分析</h1>
       </header>
 
-      {/* 📡 メインスプリット構造（左側：ASP切り替え用カード、右側：11指標＆承認ラグ特性） */}
+      {/* 📡 メインスプリット構造 */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* 🗺️ 左翼：ASPチャンネルマスターセレクトリスト */}
-        <div className={`p-5 rounded-2xl border shadow-md h-fit ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white"}`}>
-          <div className="flex items-center gap-2 mb-4">
+        {/* 🗺️ 左翼：ASPチャンネルマスターセレクトリストの大粛清 */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
+          <div className="flex items-center gap-2">
             <Layers size={16} className="text-indigo-500" />
             <span className="text-sm font-black tracking-wider">ASPチャンネル選択</span>
           </div>
 
-          {/* 💡 規律：一生終わらないスクロールバグを永久排除したレスポンシブ固定の檻 */}
           <div className="space-y-2 h-auto max-h-none overflow-visible">
             {["A8.net", "afb", "AccessTrade", "felmat", "もしもアフィリエイト", "QUORIZa"].map((aspName, idx) => {
               const isSelected = activeAspName === aspName;
@@ -164,13 +157,17 @@ export default function VLHAspPage() {
                 <div 
                   key={idx}
                   onClick={() => setActiveAspName(aspName)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-center border border-transparent ${isSelected ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20 font-black" : "bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-[#0f172a]/40 dark:text-slate-300 dark:hover:bg-[#0f172a]/90"}`}
+                  className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-center border ${
+                    isSelected 
+                      ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" 
+                      : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"
+                  }`}
                 >
                   <div>
                     <p className="text-xs md:text-sm font-black">{aspName}</p>
-                    <p className="text-[10px] opacity-60 font-bold mt-0.5">提携パートナー数: {liveData ? liveData.partnerCount : 0} 媒体</p>
+                    <p className="text-[10px] opacity-80 mt-0.5 text-slate-400 dark:text-slate-500 font-bold">提携パートナー数: {liveData ? liveData.partnerCount : 0} 媒体</p>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-black ${isSelected ? "bg-white/20 text-white" : "bg-indigo-500/10 text-indigo-500"}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-black ${isSelected ? "bg-white/20 text-white" : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"}`}>
                     {totalCv} 件
                   </span>
                 </div>
@@ -179,28 +176,28 @@ export default function VLHAspPage() {
           </div>
         </div>
 
-        {/* 🏔️ 右翼：選択されたASPの詳細財務指標 ＆ 承認特性ハックウォール */}
+        {/* 🗺️ 右翼：指標＆承認特性監査ウォールの大粛清 */}
         <div className="xl:col-span-3 space-y-6">
           
-          {/* ASP承認ラグ ＆ 確定リスク監査パネル */}
-          <div className={`p-6 rounded-2xl border shadow-md grid grid-cols-1 md:grid-cols-3 gap-6 items-center ${isLight ? "bg-white border-slate-200" : "bg-[#1e293b] border-slate-800"}`}>
+          {/* ASP承認ラグ ＆ 確定リスク監査パネルの大粛清 */}
+          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-center transition-all">
             <div className="md:col-span-1">
-              <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 tracking-wider">承認特性パラメータ</span>
-              <h2 className="text-2xl font-black mt-2 text-slate-900 dark:text-white">{currentAspData.name}</h2>
-              <p className="text-xs text-slate-400 font-bold mt-1">※データ入庫CSVと紐付け辞書に基づく動的解析</p>
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">承認特性パラメータ</span>
+              <h2 className="text-2xl font-black mt-2 text-slate-900 dark:text-slate-50">{currentAspData.name}</h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1">※動的解析済みデータ</p>
             </div>
 
-            {/* 確定ラグと承認率のツインインテリジェンスバッジ */}
-            <div className="grid grid-cols-2 gap-4 md:col-span-2 border-t md:border-t-0 md:border-l border-slate-700/20 pt-4 md:pt-0 md:pl-6">
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-1 text-[10px] font-black text-slate-400"><CheckCircle size={12}/> 平均承認率</div>
-                <p className="text-xl font-black text-emerald-500 mt-1">{currentMeta.rate}</p>
+            {/* 確定ラグと承認率のツインインテリジェンスバッジの大粛清 */}
+            <div className="grid grid-cols-2 gap-4 md:col-span-2 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800/80 pt-4 md:pt-0 md:pl-6">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 dark:text-slate-500"><CheckCircle size={12}/> 平均承認率</div>
+                <p className="text-xl font-black text-emerald-500 dark:text-emerald-400 mt-1">{currentMeta.rate}</p>
               </div>
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-1 text-[10px] font-black text-slate-400"><Clock size={12}/> 確定承認ラグ</div>
-                <p className="text-xl font-black text-amber-500 mt-1">{currentMeta.lag}</p>
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 dark:text-slate-500"><Clock size={12}/> 確定承認ラグ</div>
+                <p className="text-xl font-black text-amber-500 dark:text-amber-400 mt-1">{currentMeta.lag}</p>
               </div>
-              <div className="col-span-2 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+              <div className="col-span-2 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 dark:bg-indigo-950/20 dark:border-indigo-500/20 text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
                 {currentMeta.desc}
               </div>
             </div>
@@ -208,35 +205,35 @@ export default function VLHAspPage() {
 
           {/* 11大指標コックピット */}
           <div className="space-y-4">
-            <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-blue-500 pl-2">■ チャンネル基礎成果</div>
+            <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-blue-500 pl-2">■ チャンネル基礎成果</div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <AspKPICard title="インプレッション数" value={currentAspData.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
-              <AspKPICard title="クリック数" value={currentAspData.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
-              <AspKPICard title="クリック率" value={currentAspData.ctr.toString()} suffix="％" icon={Percent} colorClass="text-purple-500 bg-purple-500" isLight={isLight} />
-              <AspKPICard title="コンバージョン数" value={currentAspData.issued_count.toLocaleString()} suffix="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" isLight={isLight} />
-              <AspKPICard title="コンバージョン率" value={currentAspData.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
+              <AspKPICard title="インプレッション数" value={currentAspData.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" />
+              <AspKPICard title="クリック数" value={currentAspData.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" />
+              <AspKPICard title="クリック率" value={currentAspData.ctr.toString()} suffix="％" icon={Percent} colorClass="text-purple-500 bg-purple-500" />
+              <AspKPICard title="コンバージョン数" value={currentAspData.issued_count.toLocaleString()} suffix="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" />
+              <AspKPICard title="コンバージョン率" value={currentAspData.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" />
             </div>
 
-            <div className="text-xs font-black tracking-widest text-slate-400 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ チャンネル広告運用財務効率</div>
+            <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ チャンネル広告運用財務効率</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              <AspKPICard title="発生報酬額" prefix="￥" value={Math.round(currentAspData.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
-              <AspKPICard title="発生累積売上高" prefix="￥" value={Math.round(currentAspData.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
-              <AspKPICard title="費用対効果（ROAS）" value={currentAspData.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
-              <AspKPICard title="CPM" prefix="￥" value={Math.round(currentAspData.cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
-              <AspKPICard title="CPC" prefix="￥" value={Math.round(currentAspData.cpc).toLocaleString()} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
-              <AspKPICard title="CPA" prefix="￥" value={Math.round(currentAspData.cpa).toLocaleString()} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
+              <AspKPICard title="発生報酬額" prefix="￥" value={Math.round(currentAspData.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+              <AspKPICard title="発生累積売上高" prefix="￥" value={Math.round(currentAspData.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
+              <AspKPICard title="費用対効果（ROAS）" value={currentAspData.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
+              <AspKPICard title="CPM" prefix="￥" value={Math.round(currentAspData.cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
+              <AspKPICard title="CPC" prefix="￥" value={Math.round(currentAspData.cpc).toLocaleString()} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" />
+              <AspKPICard title="CPA" prefix="￥" value={Math.round(currentAspData.cpa).toLocaleString()} icon={Target} colorClass="text-pink-500 bg-pink-500" />
             </div>
           </div>
 
-          {/* 全チャンネル財務効率一覧テーブル */}
-          <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-700" : "bg-[#1e293b] border-slate-800 text-slate-300"}`}>
-            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white">
+          {/* 全チャンネル財務効率一覧テーブルの大粛清 */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
+            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
               <BarChart3 size={14} className="text-indigo-500" /> ASPチャンネル別・財務効率クロス一覧表
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400 font-black uppercase select-none">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-black uppercase select-none">
                     <th className="pb-3 text-left">ASP名</th>
                     <th className="pb-3 text-right">提携パートナー</th>
                     <th className="pb-3 text-right">クリック数</th>
@@ -248,29 +245,33 @@ export default function VLHAspPage() {
                     <th className="pb-3 text-center">承認ラグ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700 dark:divide-slate-800/60 dark:text-slate-200 font-bold">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 font-bold">
                   {aspAggregatedMap.map((asp: any, idx: number) => {
                     const meta = ASP_METADATA[asp.name] || { rate: "不明", lag: "要確認", statusColor: "" };
                     const isCurrent = asp.name === activeAspName;
                     return (
-                      <tr key={idx} className={`transition-colors ${isCurrent ? "bg-indigo-500/10 hover:bg-indigo-500/20" : "hover:bg-indigo-500/5"}`}>
-                        <td className="py-4 font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <tr key={idx} className={`transition-colors ${isCurrent ? "bg-indigo-500/10 dark:bg-indigo-500/20 hover:bg-indigo-500/20" : "hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10"}`}>
+                        <td className="py-4 font-black text-slate-900 dark:text-slate-50 flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}
                         </td>
-                        <td className="py-4 text-right opacity-80">{asp.partnerCount} 媒体</td>
-                        <td className="py-4 text-right">{asp.clicks.toLocaleString()} 回</td>
-                        <td className="py-4 text-right text-green-500">{asp.issued_count} 件</td>
-                        <td className="py-4 text-right text-red-500">￥{Math.round(asp.issued_reward).toLocaleString()}</td>
-                        <td className="py-4 text-right text-yellow-500 font-black">{asp.roas}％</td>
-                        <td className="py-4 text-right text-pink-500">￥{Math.round(asp.cpa).toLocaleString()}</td>
-                        <td className="py-4 text-center"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-black">{meta.rate}</span></td>
-                        <td className="py-4 text-center text-slate-400 font-mono">{meta.lag}</td>
+                        <td className="py-4 text-right opacity-70 text-slate-500 dark:text-slate-400">{asp.partnerCount} 媒体</td>
+                        <td className="py-4 text-right text-slate-700 dark:text-slate-300">{asp.clicks.toLocaleString()} 回</td>
+                        <td className="py-4 text-right text-green-500 dark:text-green-400">{asp.issued_count} 件</td>
+                        <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.issued_reward).toLocaleString()}</td>
+                        <td className="py-4 text-right text-yellow-600 dark:text-yellow-400 font-black">{asp.roas}％</td>
+                        <td className="py-4 text-right text-pink-500 dark:text-pink-400">￥{Math.round(asp.cpa).toLocaleString()}</td>
+                        <td className="py-4 text-center">
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black">
+                            {meta.rate}
+                          </span>
+                        </td>
+                        <td className="py-4 text-center text-slate-400 dark:text-slate-500 font-mono">{meta.lag}</td>
                       </tr>
                     );
                   })}
                   {aspAggregatedMap.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="text-center py-8 text-slate-500 font-bold">データ未入庫です。CSVを読み込ませてください。</td>
+                      <td colSpan={9} className="text-center py-8 text-slate-400 dark:text-slate-500 font-bold">データ未入庫です。CSVを読み込ませてください。</td>
                     </tr>
                   )}
                 </tbody>

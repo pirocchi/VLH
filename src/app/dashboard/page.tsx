@@ -9,14 +9,12 @@ import {
   Users
 } from "lucide-react";
 
-const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLight }: any) => (
-  <div className={`
-    ${isLight ? "bg-white border-slate-200 shadow-md text-slate-800" : "bg-[#1e293b] border-slate-800 shadow-xl text-slate-100"} 
-    p-5 rounded-2xl flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden border min-h-[135px]
-  `}>
+// 💡 大粛清：isLightによるカラー分岐を完全パージ！Tailwindのセマンティックデフォルト（slate）で統一統治
+const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
+  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      {/* 💡 ダークモード時にも視認性を確保する文字色を追記 */}
-      <span className="text-sm font-black tracking-wider block text-slate-800 dark:text-slate-200">
+      {/* 💡 規律：タイトルはデフォルトの補助カラーに統一 */}
+      <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">
         {title}
       </span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}>
@@ -24,9 +22,10 @@ const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass, isLi
       </div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 opacity-70 text-slate-600 dark:text-slate-400">{prefix}</span>}
-      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</span>
-      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 opacity-70 text-slate-600 dark:text-slate-400">{suffix}</span>}
+      {/* 💡 核心：プレフィックス、サフィックス（￥や回）が保護色にならない絶対補助カラー */}
+      {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
+      <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
+      {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{suffix}</span>}
     </div>
   </div>
 );
@@ -186,121 +185,112 @@ export default function VLHDashboardPage() {
     return aspSortAsc ? <ChevronUp size={12} className="inline ml-0.5" /> : <ChevronDown size={12} className="inline ml-0.5" />;
   };
 
-  // 💡 改善：ローディングの文字色もダークモード対応
   if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">全体ダッシュボード 展開中...</div>;
 
   return (
-    <div className="w-full">
-      <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-black tracking-tight">全体ダッシュボード</h1>
-        </div>
+    <div className="w-full space-y-5">
+      {/* 👑 ヘッダーカラー大粛清 */}
+      <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+        <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-50">全体ダッシュボード</h1>
       </header>
 
-      {/* コントロールパネル */}
-      <div className="mb-5">
-        <div className={`p-6 rounded-2xl border flex flex-col gap-5 shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800 shadow-md" : "bg-[#1e293b] border-slate-800 text-white shadow-lg"}`}>
-          <div className={`flex flex-wrap items-center gap-4 border-b pb-4 ${isLight ? "border-slate-200" : "border-slate-700/50"}`}>
-            <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
-              <Filter size={14} /> 期間切替
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {[{l:"全期間", v:"all"}, {l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
-                <button key={range.v} onClick={() => setFilterRange(range.v)} 
-                  // 💡 改善：未選択時のダークモードホバー色と文字色を完璧に調停
-                  className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-md" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0f172a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}`}>
-                  {range.l}
-                </button>
-              ))}
-            </div>
-            {filterRange === "custom" && (
-              <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
-                <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
-                  // 💡 改善：inputフォームのダークモード背景・枠線・文字色を純正クラスで調停
-                  className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-600 dark:text-slate-200 dark:bg-[#0f172a]" />
-                <span className="text-slate-500 dark:text-slate-400 text-sm">~</span>
-                <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
-                  className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-600 dark:text-slate-200 dark:bg-[#0f172a]" />
-              </div>
-            )}
+      {/* 📡 コントロールパネルカラー大粛清 */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-5 transition-all">
+        <div className="flex flex-wrap items-center gap-4 border-b pb-4 border-slate-100 dark:border-slate-800/60">
+          <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
+            <Filter size={14} /> 期間切替
           </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[{l:"全期間", v:"all"}, {l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
+              <button key={range.v} onClick={() => setFilterRange(range.v)} 
+                className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50"}`}>
+                {range.l}
+              </button>
+            ))}
+          </div>
+          {filterRange === "custom" && (
+            <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
+              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
+                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <span className="text-slate-400 dark:text-slate-500 text-sm">~</span>
+              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
+                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+            </div>
+          )}
+        </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-sm font-bold">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black tracking-wider text-slate-400 dark:text-slate-400">ASP選択:</span>
-              <select value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)} 
-                className="px-3 py-1.5 rounded-lg text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-300 text-slate-800 dark:bg-[#0f172a] dark:border-slate-600 dark:text-slate-200">
-                <option value="all">すべてのASP</option>
-                <option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2 flex-grow max-w-xs">
-              <span className="text-xs font-black tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1"><Search size={12}/> パートナー検索:</span>
-              <input type="text" placeholder="メディア名・IDを入力..." value={searchMedia} onChange={(e) => setSearchMedia(e.target.value)} 
-                className="px-3 py-1.5 rounded-lg text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-[#0f172a] dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-500" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black tracking-wider text-amber-500 flex items-center gap-1"><Coins size={12}/> 特単指定:</span>
-              <div className="flex p-0.5 rounded-xl border bg-slate-50 border-slate-200 dark:bg-[#0f172a] dark:border-slate-700">
-                {[{ v: "all", l: "すべて" }, { v: "normal", l: "通常単価" }, { v: "tokutan", l: "特単適用 (CPA>6k)" }].map(b => (
-                  <button key={b.v} onClick={() => setTokutanFilter(b.v)} 
-                    // 💡 改善：未選択時のホバーと文字色を完璧に調停
-                    className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${tokutanFilter === b.v ? "bg-amber-500 text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60"}`}>
-                    {b.l}
-                  </button>
-                ))}
-              </div>
+        <div className="flex flex-wrap items-center gap-6 text-sm font-bold">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black tracking-wider text-slate-400 dark:text-slate-500">ASP選択:</span>
+            <select value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)} 
+              className="px-3 py-1.5 rounded-lg text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200">
+              <option value="all">すべてのASP</option>
+              <option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2 flex-grow max-w-xs">
+            <span className="text-xs font-black tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1"><Search size={12}/> パートナー検索:</span>
+            <input type="text" placeholder="メディア名・IDを入力..." value={searchMedia} onChange={(e) => setSearchMedia(e.target.value)} 
+              className="px-3 py-1.5 rounded-lg text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black tracking-wider text-amber-500 flex items-center gap-1"><Coins size={12}/> 特単指定:</span>
+            <div className="flex p-0.5 rounded-xl border bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-700">
+              {[{ v: "all", l: "すべて" }, { v: "normal", l: "通常単価" }, { v: "tokutan", l: "特単適用 (CPA>6k)" }].map(b => (
+                <button key={b.v} onClick={() => setTokutanFilter(b.v)} 
+                  className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${tokutanFilter === b.v ? "bg-amber-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-200"}`}>{b.l}</button>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 📊 メインコンテンツ */}
+      {/* 📊 メインコンテンツセクション */}
       <div className="space-y-6">
         <div className="space-y-4">
-          <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-400 uppercase">■ 基礎成果セクション</div>
+          <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">■ 基礎成果セクション</div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <VLHKPICard title="インプレッション数" value={summary.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" isLight={isLight} />
-            <VLHKPICard title="クリック数" value={summary.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" isLight={isLight} />
-            <VLHKPICard title="クリック率" value={summary.ctr.toString()} suffix="％" icon={Percent} colorClass="text-purple-500 bg-purple-500" isLight={isLight} />
-            <VLHKPICard title="コンバージョン数" value={summary.issued_count.toLocaleString()} suffix="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" isLight={isLight} />
-            <VLHKPICard title="コンバージョン率" value={summary.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" isLight={isLight} />
+            <VLHKPICard title="インプレッション数" value={summary.impressions.toLocaleString()} suffix="回" icon={Eye} colorClass="text-blue-500 bg-blue-500" />
+            <VLHKPICard title="クリック数" value={summary.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" />
+            <VLHKPICard title="クリック率" value={summary.ctr.toString()} suffix="％" icon={Percent} colorClass="text-purple-500 bg-purple-500" />
+            <VLHKPICard title="コンバージョン数" value={summary.issued_count.toLocaleString()} suffix="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" />
+            <VLHKPICard title="コンバージョン率" value={summary.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" />
           </div>
-          <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-400 uppercase pt-2">■ 広告運用・財務効率セクション</div>
+          <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <VLHKPICard title="報酬額" prefix="￥" value={Math.round(summary.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" isLight={isLight} />
-            <VLHKPICard title="売上" prefix="￥" value={Math.round(summary.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" isLight={isLight} />
-            <VLHKPICard title="ROAS" value={summary.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" isLight={isLight} />
-            <VLHKPICard title="CPM" prefix="￥" value={Math.round(summary.current_cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" isLight={isLight} />
-            <VLHKPICard title="CPC" prefix="￥" value={Math.round(summary.cpc).toLocaleString()} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" isLight={isLight} />
-            <VLHKPICard title="CPA" prefix="￥" value={Math.round(summary.cpa).toLocaleString()} icon={Target} colorClass="text-pink-500 bg-pink-500" isLight={isLight} />
+            <VLHKPICard title="報酬額" prefix="￥" value={Math.round(summary.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+            <VLHKPICard title="売上" prefix="￥" value={Math.round(summary.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
+            <VLHKPICard title="ROAS" value={summary.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
+            <VLHKPICard title="CPM" prefix="￥" value={Math.round(summary.current_cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
+            <VLHKPICard title="CPC" prefix="￥" value={Math.round(summary.cpc).toLocaleString()} icon={Coins} colorClass="text-cyan-500 bg-cyan-500" />
+            <VLHKPICard title="CPA" prefix="￥" value={Math.round(summary.cpa).toLocaleString()} icon={Target} colorClass="text-pink-500 bg-pink-500" />
           </div>
         </div>
 
+        {/* 🗺️ 下翼ツインレポートセクションの大粛清 */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className={`xl:col-span-2 border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
-            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white"><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>
+          <div className="xl:col-span-2 border rounded-2xl p-6 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50"><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-black uppercase select-none cursor-pointer">
-                    {/* 💡 改善：テーブルヘッダーのホバー色もダークモードで美しく反転 */}
-                    <th className="pb-3 text-left hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("name")}>ASP {renderSortIcon("name")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("impressions")}>インプレッション数 {renderSortIcon("impressions")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("clicks")}>クリック数 {renderSortIcon("clicks")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("reward")}>報酬額 {renderSortIcon("reward")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("roas")}>ROAS {renderSortIcon("roas")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("cpa")}>CPA {renderSortIcon("cpa")}</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-black uppercase select-none cursor-pointer">
+                    <th className="pb-3 text-left hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("name")}>ASP {renderSortIcon("name")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("impressions")}>インプレッション数 {renderSortIcon("impressions")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("clicks")}>クリック数 {renderSortIcon("clicks")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("reward")}>報酬額 {renderSortIcon("reward")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("roas")}>ROAS {renderSortIcon("roas")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("cpa")}>CPA {renderSortIcon("cpa")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200 font-bold">
                   {aspPerformance.map((asp:any, idx:number) => (
                     <tr key={idx} className="hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10 transition-colors">
-                      <td className="py-4 font-black text-slate-900 dark:text-white flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
-                      <td className="py-4 text-right opacity-80">{asp.impressions.toLocaleString()}回</td>
-                      <td className="py-4 text-right">{asp.clicks.toLocaleString()}回</td>
+                      <td className="py-4 font-black text-slate-900 dark:text-slate-50 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
+                      <td className="py-4 text-right opacity-70 text-slate-500 dark:text-slate-400">{asp.impressions.toLocaleString()}回</td>
+                      <td className="py-4 text-right text-slate-700 dark:text-slate-300">{asp.clicks.toLocaleString()}回</td>
                       <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.reward).toLocaleString()}</td>
-                      <td className="py-4 text-right text-yellow-500 dark:text-yellow-400 font-black">{asp.roas}％</td>
+                      <td className="py-4 text-right text-yellow-600 dark:text-yellow-400 font-black">{asp.roas}％</td>
                       <td className="py-4 text-right text-pink-500 dark:text-pink-400">￥{Math.round(asp.cpa).toLocaleString()}</td>
                     </tr>
                   ))}
@@ -309,29 +299,26 @@ export default function VLHDashboardPage() {
             </div>
           </div>
 
-          <div className={`border rounded-2xl p-6 overflow-hidden shadow-md transition-all ${isLight ? "bg-white border-transparent shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
-            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-800 dark:text-white"><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
-            <div className="grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black mb-4 border-slate-200 bg-slate-100 dark:bg-[#0f172a] dark:border-slate-800">
+          <div className="border rounded-2xl p-6 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50"><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
+            <div className="grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black mb-4 border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800">
               {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "issued_reward", l: "報酬額" }].map(b => (
                 <button key={b.k} onClick={() => setMediaSortKey(b.k)} 
-                  // 💡 改善：ランキングボタンの未選択ホバーも純正クラスで完璧に調停
-                  className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60"}`}>
-                  {b.l}
-                </button>
+                  className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"}`}>{b.l}</button>
               ))}
             </div>
             <div className="space-y-3">
               {sortedMedias.map((media: any, idx: number) => (
-                <div key={idx} className="p-4 rounded-xl flex justify-between items-center border bg-slate-50 border-slate-200 dark:bg-[#0f172a]/40 dark:border-slate-800">
+                <div key={idx} className="p-4 rounded-xl flex justify-between items-center border bg-slate-50/50 border-slate-200 dark:bg-slate-950/40 dark:border-slate-800">
                   <div className="min-w-0 flex-grow pr-3">
                     <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/30">第 {idx+1} 位</span>
-                    <p className="text-base font-black truncate mt-2 text-slate-900 dark:text-white">{media.media_name}</p>
-                    <div className="py-1 font-black flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{media.asp}</div>
+                    <p className="text-base font-black truncate mt-2 text-slate-900 dark:text-slate-50">{media.media_name}</p>
+                    <div className="py-1 font-black flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{media.asp}</div>
                   </div>
-                  <div className="text-right flex-shrink-0 text-xs font-black space-y-0.5 border-l border-slate-700/20 dark:border-slate-700/40 pl-4 min-w-[105px]">
-                    <p className={mediaSortKey === "issued_count" ? "text-green-500 dark:text-green-400 text-sm font-black" : "text-slate-500 dark:text-slate-400"}>{media.issued_count}件</p>
-                    <p className={mediaSortKey === "roas" ? "text-yellow-500 dark:text-yellow-400 text-sm font-black" : "text-slate-500 dark:text-slate-400"}>{media.roas}％</p>
-                    <p className={mediaSortKey === "cpa" ? "text-pink-500 dark:text-pink-400 text-sm font-black" : "text-slate-500 dark:text-slate-400"}>￥{Math.round(media.cpa).toLocaleString()}</p>
+                  <div className="text-right flex-shrink-0 text-xs font-black space-y-0.5 border-l border-slate-200 dark:border-slate-800 pl-4 min-w-[105px]">
+                    <p className={mediaSortKey === "issued_count" ? "text-green-500 dark:text-green-400 text-sm font-black" : "text-slate-400 dark:text-slate-500"}>{media.issued_count}件</p>
+                    <p className={mediaSortKey === "roas" ? "text-yellow-500 dark:text-yellow-400 text-sm font-black" : "text-slate-400 dark:text-slate-500"}>{media.roas}％</p>
+                    <p className={mediaSortKey === "cpa" ? "text-pink-500 dark:text-pink-400 text-sm font-black" : "text-slate-400 dark:text-slate-500"}>￥{Math.round(media.cpa).toLocaleString()}</p>
                   </div>
                 </div>
               ))}

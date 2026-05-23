@@ -20,7 +20,6 @@ export default function VLHDictionaryPage() {
     const fetchDict = async () => {
       try {
         setLoading(true);
-        // 💡 核心：URLの末尾にタイムスタンプを強制付与し、ブラウザのしつこいキャッシュを100%大破させる！！！
         const res = await fetch(`/api/dictionary?t=${Date.now()}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
@@ -88,15 +87,15 @@ export default function VLHDictionaryPage() {
     handleSave(updated);
   };
 
-  // 💡 規律統一：共通ローディング画面
   if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">手動紐付けデータ同期中...</div>;
 
   return (
-    <div className="w-full text-slate-800 dark:text-slate-200">
-      <header className={`hidden md:flex px-8 py-5 mb-5 rounded-2xl flex justify-between items-center border shadow-md transition-all ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#1e293b] border-slate-800 text-white shadow-xl"}`}>
-        <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">パートナー紐付け設定</h1>
+    <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
+      {/* 👑 メインヘッダーの大粛清・デフォルト回帰 */}
+      <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+        <h1 className="text-xl font-black tracking-tight">パートナー紐付け設定</h1>
         {status.type && (
-          <div className={`px-4 py-1.5 rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 font-black text-xs ${status.type === 'success' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 dark:text-emerald-400" : "bg-red-500/10 text-red-500 border border-red-500/20 dark:text-red-400"}`}>
+          <div className={`px-4 py-1.5 rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 font-black text-xs ${status.type === 'success' ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400" : "bg-red-500/10 text-red-500 border border-red-500/20 dark:text-red-400"}`}>
             {status.msg}
           </div>
         )}
@@ -104,12 +103,12 @@ export default function VLHDictionaryPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* 左翼：新規登録カード */}
-        <div className={`p-8 rounded-3xl border h-fit lg:sticky lg:top-8 transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
-          <h2 className="text-lg font-black mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
+        {/* 🗺️ 左翼：新規登録カードの大粛清 */}
+        <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl h-fit lg:sticky lg:top-8 shadow-sm transition-all space-y-4">
+          <h2 className="text-lg font-black flex items-center gap-2 text-slate-900 dark:text-slate-50">
             <Plus size={20} className="text-indigo-500" /> 新規グループを作成
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-4 leading-relaxed">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
             複数のASPや異なるメディア名で活動しているパートナーを、1つの「まとめ用の名前」で合算するための箱を作成します。
           </p>
           <div className="space-y-4">
@@ -118,7 +117,7 @@ export default function VLHDictionaryPage() {
               placeholder="例：お宝脱毛特化ブログ"
               value={newMasterName}
               onChange={(e) => setNewMasterName(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#0f172a] font-black text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
+              className="w-full px-5 py-4 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-black text-base transition-all"
             />
             <button 
               onClick={addMaster}
@@ -129,7 +128,7 @@ export default function VLHDictionaryPage() {
             </button>
           </div>
 
-          <div className="mt-8 p-6 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 dark:bg-indigo-900/10 dark:border-indigo-500/20">
+          <div className="p-6 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 dark:bg-indigo-950/20 dark:border-indigo-500/20">
             <div className="flex gap-3 text-indigo-600 dark:text-indigo-400">
               <Info size={20} className="flex-shrink-0" />
               <div>
@@ -142,21 +141,21 @@ export default function VLHDictionaryPage() {
           </div>
         </div>
 
-        {/* 右翼：紐付け設定一覧 */}
+        {/* 🗺️ 右翼：紐付け設定一覧の大粛清 */}
         <div className="lg:col-span-2 space-y-6">
           {dictionary.master_partners.length === 0 ? (
-            <div className="p-20 text-center border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-[40px]">
-              <div className="w-20 h-20 bg-slate-100 dark:bg-[#1e293b] rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400 dark:text-slate-600">
+            <div className="p-20 text-center border-4 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-[40px] shadow-sm transition-all">
+              <div className="w-20 h-20 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-700">
                 <Search size={40} />
               </div>
               <p className="text-lg font-black text-slate-400 dark:text-slate-500">紐付け用グループがまだ登録されていません。</p>
             </div>
           ) : (
             dictionary.master_partners.map((master: any, mIdx: number) => (
-              <div key={mIdx} className={`p-8 rounded-[32px] border group transition-all ${isLight ? "bg-white border-slate-200 shadow-md" : "bg-[#1e293b] border-slate-800 shadow-xl"}`}>
-                <div className="flex justify-between items-start mb-6">
+              <div key={mIdx} className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] shadow-sm group transition-all space-y-5">
+                <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-xl font-black mt-2 text-slate-900 dark:text-white">{master.real_name}</h3>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-slate-50">{master.real_name}</h3>
                   </div>
                   <button 
                     onClick={() => removeMaster(mIdx)}
@@ -169,9 +168,9 @@ export default function VLHDictionaryPage() {
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
                     {master.aliases.map((alias: string, aIdx: number) => (
-                      <div key={aIdx} className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-[#0f172a] rounded-xl border border-slate-200 dark:border-slate-700 group/alias">
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{alias}</span>
-                        <button onClick={() => removeAlias(mIdx, aIdx)} className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400">
+                      <div key={aIdx} className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl group/alias">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{alias}</span>
+                        <button onClick={() => removeAlias(mIdx, aIdx)} className="text-slate-400 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -182,7 +181,7 @@ export default function VLHDictionaryPage() {
                     <input 
                       type="text"
                       placeholder="まとめたいASP側のサイト名、またはメディアIDを入力してEnter..."
-                      className="flex-1 px-4 py-3 rounded-xl border bg-slate-50 border-slate-200 dark:bg-[#0f172a]/50 dark:border-slate-700 font-bold text-sm outline-none text-slate-800 dark:text-white focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
+                      className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm"
                       onKeyDown={(e: any) => {
                         if (e.key === 'Enter') {
                           addAlias(mIdx, e.target.value);

@@ -39,7 +39,6 @@ export default function RootLayout({
   );
 
   useEffect(() => {
-    setMounted(true);
     const savedMode = localStorage.getItem("vlh-theme-mode") as "light" | "dark" | "auto";
     if (savedMode) {
       setThemeMode(savedMode);
@@ -51,6 +50,8 @@ export default function RootLayout({
     if (isLocal) {
       setMenuItems(rawMenuItems);
     }
+    // 💡 改善： hydration mismatch 防止のため mounted は状態変更後にセット
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -77,27 +78,27 @@ export default function RootLayout({
     root.classList.remove("light", "dark");
     root.classList.add(activeTheme);
     
-    // ネイティブUI（スクロールバー、セレクトボックス、日付入力など）にテーマを適用
     root.style.colorScheme = activeTheme;
   }, [activeTheme, mounted]);
-
-  const isLight = activeTheme === "light";
 
   return (
     <html lang="ja" className="h-full">
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
           
-          <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-100 text-slate-800 dark:bg-[#0f172a] dark:text-slate-100">
+          {/* 💡 大粛清：外殻全体の背景・文字色をTailwindの純正セマンティック（slate-50 / slate-950）へ強制調停！ */}
+          <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
             
-            <aside className="hidden md:flex w-72 flex-shrink-0 flex flex-col border-r bg-white border-slate-200 shadow-xl dark:bg-[#1e293b] dark:border-slate-800 dark:shadow-2xl">
-              <div className="p-8 flex items-center gap-3 border-b border-slate-700/10">
-                <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-lg shadow-indigo-500/20">VLH</div>
+            {/* 🗺️ PC用サイドバーの大粛清：bg-white / bg-slate-900 で中央一元統治 */}
+            <aside className="hidden md:flex w-72 flex-shrink-0 flex-col border-r bg-white border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+              <div className="p-8 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800/60">
+                <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-md shadow-indigo-500/20">VLH</div>
                 <div className="flex flex-col">
-                  <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">VLH v2.8 Console</span>
+                  <span className="text-base font-black tracking-tight text-slate-900 dark:text-slate-50">VLH v2.8 Console</span>
                 </div>
               </div>
 
+              {/* メニューナビゲーションの大粛清 */}
               <nav className="flex-1 p-4 space-y-2 mt-4">
                 {menuItems.map((item) => {
                   const isActive = pathname === item.path;
@@ -106,8 +107,8 @@ export default function RootLayout({
                       <div className={`
                         group flex items-center justify-between px-5 py-4 rounded-2xl cursor-pointer transition-all duration-300
                         ${isActive 
-                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" 
-                          : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-[#0f172a]/50 text-slate-400"}
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20" 
+                          : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-50"}
                       `}>
                         <div className="flex items-center gap-4">
                           <item.icon size={22} className={isActive ? "text-white" : "text-indigo-500"} />
@@ -120,29 +121,31 @@ export default function RootLayout({
                 })}
               </nav>
 
+              {/* モード切り替えユニットの大粛清 */}
               <div className="p-6 border-t border-slate-100 dark:border-slate-800">
-                <div className={`flex p-1.5 rounded-2xl ${isLight ? "bg-slate-200" : "bg-[#0f172a]"}`}>
+                <div className="flex p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200/40 dark:border-slate-800">
                   {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
-                    <button key={t.m} onClick={() => setThemeMode(t.m as any)} className={`flex-1 flex justify-center py-2.5 rounded-xl transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:text-slate-400"}`}><t.i size={16} /></button>
+                    <button key={t.m} onClick={() => setThemeMode(t.m as any)} className={`flex-1 flex justify-center py-2.5 rounded-xl transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}><t.i size={16} /></button>
                   ))}
                 </div>
-                <p className="text-center text-[10px] font-bold text-slate-500 mt-6 tracking-widest uppercase">
+                <p className="text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-6 tracking-widest uppercase">
                   © Arrow8 inc.
                 </p>
               </div>
             </aside>
 
+            {/* 🗺️ モバイル用ヘッダー・ナビゲーションの大粛清 */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
               
-              <header className="md:hidden flex-shrink-0 flex flex-col border-b bg-white border-slate-200 shadow-md dark:bg-[#1e293b] dark:border-slate-800">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700/40">
+              <header className="md:hidden flex-shrink-0 flex flex-col border-b bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800/60">
                   <div className="flex items-center gap-2">
                     <div className="bg-indigo-600 text-white px-2 py-0.5 rounded-md font-black text-xs">VLH</div>
-                    <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">アフィリエイト広告 比較・分析</span>
+                    <span className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-50">アフィリエイト広告 比較・分析</span>
                   </div>
-                  <div className="flex p-0.5 rounded-xl bg-slate-100 dark:bg-[#0f172a]">
+                  <div className="flex p-0.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/40 dark:border-slate-800">
                     {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
-                      <button key={t.m} onClick={() => setThemeMode(t.m as any)} className={`p-1.5 rounded-lg transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400"}`}><t.i size={12} /></button>
+                      <button key={t.m} onClick={() => setThemeMode(t.m as any)} className={`p-1.5 rounded-lg transition-all ${themeMode === t.m ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 dark:text-slate-500"}`}><t.i size={12} /></button>
                     ))}
                   </div>
                 </div>
@@ -152,7 +155,7 @@ export default function RootLayout({
                     const isActive = pathname === item.path;
                     return (
                       <Link key={item.path} href={item.path} className="flex-shrink-0">
-                        <div className={`px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black transition-all duration-200 ${isActive ? "bg-indigo-600 text-white shadow-md" : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-[#0f172a] text-slate-400 hover:text-white"}`}>
+                        <div className={`px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black transition-all duration-200 ${isActive ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:hover:text-slate-200"}`}>
                           <item.icon size={13} className={isActive ? "text-white" : "text-indigo-500"} />
                           {item.name}
                         </div>
@@ -162,6 +165,7 @@ export default function RootLayout({
                 </nav>
               </header>
 
+              {/* メインコンテンツ表示領域 */}
               <main className="flex-1 overflow-y-auto scroll-smooth pb-32 md:pb-0">
                 <div className="p-4 sm:p-8">
                   {children}

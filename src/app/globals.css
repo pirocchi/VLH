@@ -1,38 +1,19 @@
 @import "tailwindcss";
 
-@layer base {
-  /* 💡 1. ネイティブUI（スクロールバー等）をダークモードへ強制適合 */
-  :root.dark {
-    color-scheme: dark;
-  }
+/* 💡 これまでに仕込んだ個別カラーハックや !important ルールをすべて完全消滅（パージ）！ */
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
 
-  /* 💡 2. 最終兵器：全ページの「黒っぽい文字」を強制的に白へ反転！！！ */
-  .dark .text-slate-800,
-  .dark .text-slate-900,
-  .dark .text-gray-800,
-  .dark .text-gray-900,
-  .dark .text-black {
-    color: #f8fafc !important; /* 闇の中で輝く純白（slate-50）へ強制書き換え */
-  }
-
-  /* 💡 3. 全ページの「白い背景（カード等）」を強制的にダークパネルへ反転！！！ */
-  .dark .bg-white {
-    background-color: #1e293b !important; /* slate-800 の美しいダークブルーへ */
-    border-color: #334155 !important;
-  }
-
-  /* 💡 4. 全ページの入力フォーム・プルダウンを強制ダーク仕様へ！ */
-  .dark input,
-  .dark select,
-  .dark textarea {
-    background-color: #0f172a !important; /* 一段暗い背景 */
-    color: #f8fafc !important; /* 白文字 */
-    border-color: #334155 !important;
-  }
-  
-  /* プルダウンの選択肢の中身も見えなくなるバグを完全パージ */
-  .dark option {
-    background-color: #0f172a !important;
-    color: #f8fafc !important;
-  }
+/* スクロールバーを上品にデフォルトブレンド（Tailwindのユーティリティが通る土台） */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
