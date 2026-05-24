@@ -31,12 +31,11 @@ export default function RootLayout({
     { name: "パートナー紐付け設定", path: "/dictionary", icon: BookOpen },
     { name: "ASP別詳細分析", path: "/asp", icon: Layers },
     { name: "特単管理", path: "/tokutan", icon: Crown },
-    { name: "データ入庫（CSV）", path: "/upload", icon: Upload, isUploadMenu: true },
+    { name: "データ入庫（CSV）", path: "/upload", icon: Upload },
   ];
 
-  const [menuItems, setMenuItems] = useState<any[]>(
-    rawMenuItems.filter(item => !item.isUploadMenu)
-  );
+  // 💡 大解放：臆病なフィルターを完全撤廃し、初期状態からデータ入庫メニューを100%常時装填！
+  const [menuItems] = useState<any[]>(rawMenuItems);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("vlh-theme-mode") as "light" | "dark" | "auto";
@@ -44,13 +43,7 @@ export default function RootLayout({
       setThemeMode(savedMode);
     }
 
-    const hostname = window.location.hostname;
-    const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.");
-
-    if (isLocal) {
-      setMenuItems(rawMenuItems);
-    }
-    // 💡 改善： hydration mismatch 防止のため mounted は状態変更後にセット
+    // 💡 大粛清：isLocalによるドメイン検閲・隔離壁を完全削除（パージ）！
     setMounted(true);
   }, []);
 
@@ -86,10 +79,10 @@ export default function RootLayout({
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
           
-          {/* 💡 大粛清：外殻全体の背景・文字色をTailwindの純正セマンティック（slate-50 / slate-950）へ強制調停！ */}
+          {/* 外殻全体の背景・文字色をTailwindの純正セマンティック（slate-50 / slate-950）へ強制調停 */}
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
             
-            {/* 🗺️ PC用サイドバーの大粛清：bg-white / bg-slate-900 で中央一元統治 */}
+            {/* PC用サイドバー */}
             <aside className="hidden md:flex w-72 flex-shrink-0 flex-col border-r bg-white border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
               <div className="p-8 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800/60">
                 <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl font-black text-sm tracking-tighter shadow-md shadow-indigo-500/20">VLH</div>
@@ -98,7 +91,7 @@ export default function RootLayout({
                 </div>
               </div>
 
-              {/* メニューナビゲーションの大粛清 */}
+              {/* メニューナビゲーション */}
               <nav className="flex-1 p-4 space-y-2 mt-4">
                 {menuItems.map((item) => {
                   const isActive = pathname === item.path;
@@ -121,7 +114,7 @@ export default function RootLayout({
                 })}
               </nav>
 
-              {/* モード切り替えユニットの大粛清 */}
+              {/* モード切り替えユニット */}
               <div className="p-6 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200/40 dark:border-slate-800">
                   {[ {m:"light", i:Sun}, {m:"dark", i:Moon}, {m:"auto", i:Clock} ].map(t => (
@@ -134,7 +127,7 @@ export default function RootLayout({
               </div>
             </aside>
 
-            {/* 🗺️ モバイル用ヘッダー・ナビゲーションの大粛清 */}
+            {/* モバイル用ヘッダー・ナビゲーション */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
               
               <header className="md:hidden flex-shrink-0 flex flex-col border-b bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800">
