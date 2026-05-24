@@ -136,6 +136,9 @@ export default function VLHTokutanPage() {
       const cv = p.cv;
       const totalRevenue = cv * 79800;
 
+      // 🚨 核心：製造原価・送料・決済手数料等を一括パージするための安全な原価構造の定義（例：売上の40%を各種製造物流変動費とする）
+      const otherVariableCosts = totalRevenue * 0.40;
+
       let detectedLevel = 1; 
       let isSpecial = false;
 
@@ -177,21 +180,24 @@ export default function VLHTokutanPage() {
 
       let partnerProfit = 0;
       let aspProfit = 0;
-      let 自社残し = 0;
+      let totalAffiliateCost = 0;
 
       if (isSpecial) {
         partnerProfit = p.rawReward * 0.8; 
         aspProfit = p.rawReward * 0.2;
-        自社残し = totalRevenue - p.rawReward;
+        totalAffiliateCost = p.rawReward;
       } else {
         partnerProfit = cv * currentTier.net;
         aspProfit = cv * (currentTier.gross - currentTier.net);
-        自社残し = totalRevenue - (cv * currentTier.gross);
+        totalAffiliateCost = cv * currentTier.gross;
       }
+
+      // 🧠 財務調停：総売上から「アフィリエイト総費用」と「製造・決済・梱包・配送の全変動費」を完全に引き剥がした【真の利益】
+      const 実質利益 = totalRevenue - totalAffiliateCost - otherVariableCosts;
 
       const mainAsp = Object.keys(p.asps).join(" / ");
 
-      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, 自社残し };
+      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, 実質利益 };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
@@ -261,7 +267,7 @@ export default function VLHTokutanPage() {
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <h1 className="text-xl font-black tracking-tight">特別単価設定管理</h1>
+        <h1 className="text-xl font-black tracking-tight">特別単価管理・分析</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -402,18 +408,17 @@ export default function VLHTokutanPage() {
               </div>
 
               <div className="space-y-2">
-                {/* 🤝 修正：元のシンプルで美しいタイトルに完全巻き戻し */}
                 <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・報酬内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
                   <TokutanKPICard title="アフィリエイター利益" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
                   <TokutanKPICard title="ASPマージン" prefix="￥" value={Math.round(currentPartner.aspProfit).toLocaleString()} icon={Percent} colorClass="text-orange-400 bg-orange-400" />
-                  <TokutanKPICard title="自社残高" prefix="￥" value={Math.round(currentPartner.自社残し).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
+                  {/* 👑 大手術：原価・物流コストを引いた本当の「実質利益」を表示！！！ */}
+                  <TokutanKPICard title="実質利益" prefix="￥" value={Math.round(currentPartner.実質利益).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
                 </div>
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
-                {/* 🤝 修正：元のシンプルで美しいタイトルに完全巻き戻し */}
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
                   <Filter size={14} className="text-indigo-500" /> ケノン特別単価基準表
                 </h3>
