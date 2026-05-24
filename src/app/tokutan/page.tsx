@@ -232,7 +232,7 @@ export default function VLHTokutanPage() {
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <h1 className="text-xl font-black tracking-tight">特別単価設定管理</h1>
+        <h1 className="text-xl font-black tracking-tight">特単管理</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -354,7 +354,7 @@ export default function VLHTokutanPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・三位一体の財務内訳（税込）</div>
+                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">当月成果と財務内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
                   <TokutanKPICard title="アフィリエイターの総儲け" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
