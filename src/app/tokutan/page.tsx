@@ -60,7 +60,6 @@ export default function VLHTokutanPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
-  // Gemini連携用のリアルタイムステート
   const [aiAdvice, setAiAdvice] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
 
@@ -219,12 +218,10 @@ export default function VLHTokutanPage() {
     return found || filteredPartners[0];
   }, [filteredPartners, selectedPartnerName]);
 
-  // 💡 規律：パートナーを切り替えたら、前の古いアドバイス文は即座にクリアする
   useEffect(() => {
     setAiAdvice("");
   }, [currentPartner]);
 
-  // 👑 核心：オンデマンド手動実行用のクリックハンドラー
   const handleGenerateAdvice = async () => {
     if (!currentPartner) return;
     
@@ -250,7 +247,7 @@ export default function VLHTokutanPage() {
         const aiJson = await aiRes.json();
         setAiAdvice(aiJson.advice);
       } else {
-        setAiAdvice("⚠️ Geminiの呼び出しに失敗しました。APIキーまたはネットワークの檻を確認してください。");
+        setAiAdvice("⚠️ Geminiの呼び出しに失敗しました。APIキーまたはネットワーク設定を確認してください。");
       }
     } catch (err) {
       setAiAdvice("⚠️ Geminiへの通信が一時的に遮断されました。");
@@ -259,7 +256,7 @@ export default function VLHTokutanPage() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価判定マトリクス起動中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価設定管理起動中...</div>;
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
@@ -271,7 +268,7 @@ export default function VLHTokutanPage() {
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
           <div className="flex items-center gap-2">
             <Search size={16} className="text-indigo-500" />
-            <span className="text-sm font-black tracking-wider">パートナー選抜</span>
+            <span className="text-sm font-black tracking-wider">パートナー一覧</span>
           </div>
 
           <div className="space-y-2 mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
@@ -353,7 +350,7 @@ export default function VLHTokutanPage() {
             <>
               <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 items-center transition-all">
                 <div>
-                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">リアルタイム単価判定</span>
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">特別単価判定</span>
                   <h2 className="text-xl font-black mt-2 text-slate-900 dark:text-slate-50">{currentPartner.name}</h2>
                   
                   <div className="mt-4 flex items-center gap-3">
@@ -361,7 +358,7 @@ export default function VLHTokutanPage() {
                       {currentPartner.isSpecial ? "特殊" : `Lv.${currentPartner.currentTier.level}`}
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">自動判定された現在のステータス</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">判定された現在のステータス</p>
                       <p className="text-base font-black text-slate-900 dark:text-slate-100">{currentPartner.currentTier.name}</p>
                       {!currentPartner.isSpecial && (
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 font-bold">
@@ -374,7 +371,6 @@ export default function VLHTokutanPage() {
 
                 <div className="border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800/80 pt-4 md:pt-0 md:pl-6 flex flex-col justify-center h-full">
                   <div className="space-y-2">
-                    {/* 📡 調停：ヘッダー部分にオンデマンド実行ボタンをビシッとインジェクション */}
                     <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
                         <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI：Gemini直結）
@@ -393,7 +389,7 @@ export default function VLHTokutanPage() {
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
                       {aiLoading ? (
                         <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">
-                          <Flame size={14} className="animate-spin" /> ⚡ Gemini 2.5 Proが戦況データを高度監査中...
+                          <Flame size={14} className="animate-spin" /> ⚡ Geminiがデータを分析中...
                         </p>
                       ) : (
                         <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">
@@ -406,18 +402,20 @@ export default function VLHTokutanPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・三位一体の財務内訳（税込）</div>
+                {/* 🤝 修正：元のシンプルで美しいタイトルに完全巻き戻し */}
+                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・報酬内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
-                  <TokutanKPICard title="アフィリエイターの総儲け" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
-                  <TokutanKPICard title="ASPの総儲け（マージン）" prefix="￥" value={Math.round(currentPartner.aspProfit).toLocaleString()} icon={Percent} colorClass="text-orange-400 bg-orange-400" />
-                  <TokutanKPICard title="自社の売上残高（手残り）" prefix="￥" value={Math.round(currentPartner.自社残し).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
+                  <TokutanKPICard title="アフィリエイター利益" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
+                  <TokutanKPICard title="ASPマージン" prefix="￥" value={Math.round(currentPartner.aspProfit).toLocaleString()} icon={Percent} colorClass="text-orange-400 bg-orange-400" />
+                  <TokutanKPICard title="自社残高" prefix="￥" value={Math.round(currentPartner.自社残し).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
                 </div>
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
+                {/* 🤝 修正：元のシンプルで美しいタイトルに完全巻き戻し */}
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
-                  <Filter size={14} className="text-indigo-500" /> ケノン特別単価・ガバナンス基準表（グロス・ネット完全版）
+                  <Filter size={14} className="text-indigo-500" /> ケノン特別単価基準表
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
@@ -463,7 +461,7 @@ export default function VLHTokutanPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-white dark:bg-slate-900 shadow-sm">
+            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
               <ShieldAlert size={24} className="text-slate-300 dark:text-slate-600"/>
               指定のクロスフィルターに合致するパートナー情報が存在しません。
             </div>
