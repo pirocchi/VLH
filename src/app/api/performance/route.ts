@@ -9,9 +9,10 @@ export const fetchCache = "force-no-store";
 
 const CONSOLE_ROOT = process.cwd();
 const MEMORY_JSON_PATH = path.join(CONSOLE_ROOT, "..", "03_Memory", "vlh_normalized_performance.json");
+const CONSOLE_JSON_PATH = path.join(CONSOLE_ROOT, "vlh_normalized_performance.json");
 
 /**
- * 📊 GET: 宇宙ストレージから10万行のデータを認証トークン付きで一撃最速フェッチ
+ * 📊 GET: 宇宙ストレージから10万行のデータをトークン付きでフェッチし、ローカル物理へ逆ミラーリング
  */
 export async function GET() {
   try {
@@ -23,7 +24,6 @@ export async function GET() {
     const targetBlob = blobList.blobs[0];
     
     if (targetBlob) {
-      // 💡 核心：Privateファイルへアクセスするため、ヘッダーに環境変数のトークン（合言葉）を完全装填！！！
       const blobRes = await fetch(targetBlob.url, { 
         cache: "no-store",
         headers: {
@@ -33,16 +33,27 @@ export async function GET() {
 
       if (blobRes.ok) {
         const data = await blobRes.json();
+
+        // 💡 核心：ローカル環境下であれば、クラウドの最新データを物理JSON2拠点へ自動で逆ミラーリング上書き保存！
+        try {
+          if (fs.existsSync(path.dirname(MEMORY_JSON_PATH))) {
+            fs.writeFileSync(MEMORY_JSON_PATH, JSON.stringify(data, null, 2), "utf-8");
+          }
+          if (fs.existsSync(path.dirname(CONSOLE_JSON_PATH))) {
+            fs.writeFileSync(CONSOLE_JSON_PATH, JSON.stringify(data, null, 2), "utf-8");
+          }
+        } catch (fsErr) {}
+
         return NextResponse.json(data);
       } else {
         console.error(`⚠️ Vercel Blobからの取得エラー。ステータスコード: ${blobRes.status}`);
       }
     }
   } catch (e: any) {
-    console.error("❌ Vercel Blobからのデータ取得に致命的失敗:", e.message);
+    console.error("❌ Vercel Blobからのデータ取得に失敗:", e.message);
   }
 
-  // クラウドが死んでいる場合のローカル物理フォールバック
+  // クラウド通信遮断時、またはローカル開発時の物理フォールバック
   if (fs.existsSync(MEMORY_JSON_PATH)) {
     const localData = fs.readFileSync(MEMORY_JSON_PATH, "utf-8");
     return NextResponse.json(JSON.parse(localData));
@@ -52,7 +63,7 @@ export async function GET() {
 }
 
 /**
- * 🚀 POST: ローカルのPythonから撃ち込まれたデータをVercel Blobへ強制上書き射出
+ * 🚀 POST: 撃ち込まれたデータをVercel Blobおよびローカル物理双方へ絶対上書き射出
  */
 export async function POST(req: NextRequest) {
   try {
@@ -68,6 +79,16 @@ export async function POST(req: NextRequest) {
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
     
+    // POST時も物理ディスク2拠点をミラーリング
+    try {
+      if (fs.existsSync(path.dirname(MEMORY_JSON_PATH))) {
+        fs.writeFileSync(MEMORY_JSON_PATH, JSON.stringify(data, null, 2), "utf-8");
+      }
+      if (fs.existsSync(path.dirname(CONSOLE_JSON_PATH))) {
+        fs.writeFileSync(CONSOLE_JSON_PATH, JSON.stringify(data, null, 2), "utf-8");
+      }
+    } catch (fsErr) {}
+
     return NextResponse.json({ success: true, synced_rows: data.length });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
