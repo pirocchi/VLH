@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 /**
- * 🧠 POST: パートナーの財務アセットを「Gemini」の脳細胞へ送り込み、神速のアドバイスを錬成
+ * 🧠 POST: パートナーの財務アセットを「Gemini 2.5 Pro」の脳細胞へ送り込み、神速のアドバイスを錬成
  */
 export async function POST(req: NextRequest) {
   try {
@@ -14,10 +14,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ advice: "⚠️ GEMINI_API_KEY がNode環境変数（.env）に装填されていません。" });
     }
 
-    // 💡 規律：gemini-1.5-pro が確実に鎮座する「v1beta」エンドポイントへ完全絶対回帰！！！
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    // 💡 換装：最高司令官の命により、最強モデル「gemini-2.5-pro」の通信パイプラインを完全構築！
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
-    // 👑 プロンプト：最高財務AIとして現場を厳格に統治する冷徹な規律
+    // 👑 プロンプト：最高財務AIとして現場（福本たち）を厳格に統治する冷徹な規律
     const prompt = `
 あなたはアローエイト株式会社および株式会社エムロックの最高財務AIアフィリエイトアナリスト「Gemini」です。
 現在、大ヒット家庭用脱毛器「ケノン」の特別単価判定ガバナンスシステム「VLH」を運用しています。
@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 400, temperature: 0.3 }
       })
     });
 
