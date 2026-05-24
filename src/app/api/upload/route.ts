@@ -3,7 +3,7 @@ import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
 import { promisify } from "util";
-import { put, list } from "@vercel/blob";
+import { put, list } from "@vercelblob";
 
 const execAsync = promisify(exec);
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       fs.mkdirSync(runtimeTmpDir, { recursive: true });
     }
 
-    // 💡 改善：過去のクラウド上の全歴史メモリを「完全な安全第一主義」でロード
+    // 過去のクラウド上の全歴史メモリをロード
     let combinedNormalizedList: any[] = [];
     try {
       const blobList = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -83,8 +83,6 @@ export async function POST(req: NextRequest) {
 
       const buffer = Buffer.from(await file.arrayBuffer());
       
-      // 💡 最終調停：一時ファイル名に「元の正しいYYYYMMDD」を先頭に復活させる！！！
-      // これによりブリュンヒルドが Date.now() の数字を日付と誤認するバグが宇宙から消滅します！
       const safeTmpPath = path.join(runtimeTmpDir, `vlh_${YYYYMMDD}_${Date.now()}.csv`);
       fs.writeFileSync(safeTmpPath, buffer);
 
@@ -115,13 +113,12 @@ export async function POST(req: NextRequest) {
             fs.writeFileSync(finalArchivedPath, buffer);
           } catch (e) {}
 
-          // 💡 改善：バグの温床になっていた findIndex 重複パージ条件を完全廃止！！！
-          // 解析された行をそのままストレートに全件マージし、1行も取りこぼさずに配列へガッチャンコします！
+          // 解析された行をストレートに全件マージ（重複はこの後のMap調停で一撃粉砕）
           combinedNormalizedList = [...combinedNormalizedList, ...parsedRows];
           totalProcessedRows += parsedRows.length;
-          console.log(`✓ ブリュンヒルドパース成功 [${file.name}]: +${parsedRows.length} 行 (累積合計: ${combinedNormalizedList.length} 行)`);
+          console.log(`✓ ブリュンヒルドパース成功 [${file.name}]: +${parsedRows.length} 行`);
         } else {
-          console.warn(`⚠ 警告 [${file.name}]: パース結果が空、または配列ではありませんでした。`);
+          console.log(`⚠ 警告 [${file.name}]: パース結果が空、または配列ではありませんでした。`);
         }
       } catch (execErr: any) {
         if (fs.existsSync(safeTmpPath)) fs.unlinkSync(safeTmpPath);
@@ -130,17 +127,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 🚀 核心：クラウド（Vercel Blob Private）へ大統一JSONを絶対上書き直撃射出！！！
+    // 🚀 核心：重複を20000%永久抹殺する、クラウド側・一意性上書きマージプロトコル
     if (combinedNormalizedList.length > 0) {
+      const masterMap = new Map<string, any>();
+      
+      for (const row of combinedNormalizedList) {
+        // 宇宙一意キーの創世 -> [ASP名]_[絶対日付]_[メディアID]
+        const key = `${row.asp}_${row.date}_${row.media_id}`;
+        // すでに同一キーが存在する場合は最新の行（ループ後方）で完全自動上書き
+        masterMap.set(key, row);
+      }
+      
+      // マップから重複の完全に消滅したユニーク配列を再生成
+      combinedNormalizedList = Array.from(masterMap.values());
+      console.log(`🧹 クラウド側マージ監査完了。重複をパージしたユニーク総行数: ${combinedNormalizedList.length} 行`);
+
       console.log(`🌐 Vercel Blob [vlh-memory] へ最終大統一JSONを絶対上書き射出中... (総行数: ${combinedNormalizedList.length} 行)`);
       
       try {
-        // 💡 最終調停：Vercel BlobのPrivate規律におけるオプションの檻を100%完全適合化！
-        // allowOverwrite: true を明示し、同一のファイル名（vlh_normalized_performance.json）を容赦なく最新成果で上書きします！
         await put("vlh_normalized_performance.json", JSON.stringify(combinedNormalizedList, null, 2), {
           access: "private",
           addRandomSuffix: false,
-          allowOverwrite: true, // 絶対上書き許可
+          allowOverwrite: true,
           token: process.env.BLOB_READ_WRITE_TOKEN
         });
         
@@ -163,7 +171,7 @@ export async function POST(req: NextRequest) {
     console.log(`=== 🎉 VLH DATA INJECTION PULSE COMPLETE: +${totalProcessedRows} ROWS STACKED ===`);
     return NextResponse.json({ success: true, rows_stacked: totalProcessedRows });
   } catch (err: any) {
-    console.error("❌ 致命的大破システムエラー:", err.message);
+    console.error("❌ 致命大破システムエラー:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
