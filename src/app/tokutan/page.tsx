@@ -60,7 +60,7 @@ export default function VLHTokutanPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
-  // 💡 Gemini連携用の新規リアルタイムステート群
+  // 💡 Gemini連携用のリアルタイムステート
   const [aiAdvice, setAiAdvice] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
 
@@ -226,7 +226,7 @@ export default function VLHTokutanPage() {
       return;
     }
 
-    const triggerJimBrain = async () => {
+    const triggerGeminiBrain = async () => {
       try {
         setAiLoading(true);
         setAiAdvice("");
@@ -258,8 +258,8 @@ export default function VLHTokutanPage() {
       }
     };
 
-    triggerJimBrain();
-  }, [currentPartner]); // ➔ 選択中のパートナーが切り替わった瞬間、ジムの脳細胞が自動で閃光起動！
+    triggerGeminiBrain();
+  }, [currentPartner]); // ➔ 選択中のパートナーが切り替わった瞬間、Geminiの脳細胞が自動で閃光起動！
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価判定マトリクス起動中...</div>;
 
@@ -379,7 +379,6 @@ export default function VLHTokutanPage() {
                     <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
                       <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI：Gemini直結）
                     </div>
-                    {/* 💡 視覚調停：ジムが戦況を分析中であるかをアニメーション付きでクッキリ演出 */}
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
                       {aiLoading ? (
                         <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">
