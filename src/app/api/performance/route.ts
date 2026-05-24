@@ -11,11 +11,10 @@ const CONSOLE_ROOT = process.cwd();
 const MEMORY_JSON_PATH = path.join(CONSOLE_ROOT, "..", "03_Memory", "vlh_normalized_performance.json");
 
 /**
- * 📊 GET: 宇宙ストレージから10万行のデータをピンポイントで最速フェッチ
+ * 📊 GET: 宇宙ストレージから10万行のデータを認証トークン付きで一撃最速フェッチ
  */
 export async function GET() {
   try {
-    // 💡 改善：全件ループ検索を完全廃止！prefix指定でターゲットを一撃で狙い撃ち奪取する
     const blobList = await list({ 
       prefix: "vlh_normalized_performance.json",
       token: process.env.BLOB_READ_WRITE_TOKEN 
@@ -24,19 +23,26 @@ export async function GET() {
     const targetBlob = blobList.blobs[0];
     
     if (targetBlob) {
-      const blobRes = await fetch(targetBlob.url, { cache: "no-store" });
+      // 💡 核心：Privateファイルへアクセスするため、ヘッダーに環境変数のトークン（合言葉）を完全装填！！！
+      const blobRes = await fetch(targetBlob.url, { 
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+        }
+      });
+
       if (blobRes.ok) {
         const data = await blobRes.json();
         return NextResponse.json(data);
+      } else {
+        console.error(`⚠️ Vercel Blobからの取得エラー。ステータスコード: ${blobRes.status}`);
       }
-    } else {
-      console.warn("⚠️ Vercel Blob上に vlh_normalized_performance.json が見つかりません。");
     }
   } catch (e: any) {
     console.error("❌ Vercel Blobからのデータ取得に致命的失敗:", e.message);
   }
 
-  // クラウドが万が一死んでいた場合のローカル物理フォールバック
+  // クラウドが死んでいる場合のローカル物理フォールバック
   if (fs.existsSync(MEMORY_JSON_PATH)) {
     const localData = fs.readFileSync(MEMORY_JSON_PATH, "utf-8");
     return NextResponse.json(JSON.parse(localData));
@@ -64,7 +70,6 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ success: true, synced_rows: data.length });
   } catch (err: any) {
-    console.error("❌ 同期受入APIエラー:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
