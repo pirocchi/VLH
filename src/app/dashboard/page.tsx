@@ -169,8 +169,56 @@ export default function VLHDashboardPage() {
     });
   }, [filteredData, aspSortKey, aspSortAsc]);
 
+  // 👑 大粛清・効率ランキングの「真のグループ化名寄せ集計ロジック」
   const sortedMedias = useMemo(() => {
-    return [...filteredData].sort((a, b) => (b[mediaSortKey] || 0) - (a[mediaSortKey] || 0)).slice(0, 5);
+    const mediaMap: Record<string, any> = {};
+
+    filteredData.forEach(row => {
+      if (!row.media_name) return;
+      // メディア名とASP名のコンビネーションで一意のキーを創世
+      const key = `${row.media_name}_${row.asp}`;
+      
+      if (!mediaMap[key]) {
+        mediaMap[key] = {
+          media_name: row.media_name,
+          asp: row.asp,
+          impressions: 0,
+          clicks: 0,
+          issued_count: 0,
+          issued_reward: 0,
+          revenue: 0
+        };
+      }
+      
+      // 期間内の数値を漏れなく絶対加算（グループ合計化）
+      mediaMap[key].impressions += (row.impressions || 0);
+      mediaMap[key].clicks += (row.clicks || 0);
+      mediaMap[key].issued_count += (row.issued_count || 0);
+      mediaMap[key].issued_reward += (row.issued_reward || 0);
+      mediaMap[key].revenue += (row.revenue || 0);
+    });
+
+    // 合計されたアセットをベースに、率系指標（ROAS、CPA）を正確に再精錬
+    const aggregatedList = Object.values(mediaMap).map((media: any) => {
+      const cv = media.issued_count;
+      const cost = media.issued_reward;
+      const rev = media.revenue;
+
+      return {
+        ...media,
+        roas: cost > 0 ? parseFloat(((rev / cost) * 100).toFixed(2)) : 0.0,
+        cpa: cv > 0 ? Math.round(cost / cv) : 0
+      };
+    });
+
+    // 指定のキーでソートを執行
+    return aggregatedList.sort((a: any, b: any) => {
+      // 💡 改善：CPAボタンの時は「低い（効率が良い）」方を上位に並べる
+      if (mediaSortKey === "cpa") {
+        return (a.cpa || 0) - (b.cpa || 0);
+      }
+      return (b[mediaSortKey] || 0) - (a[mediaSortKey] || 0);
+    }).slice(0, 5);
   }, [filteredData, mediaSortKey]);
 
   const handleAspSort = (key: string) => {
