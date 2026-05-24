@@ -93,7 +93,7 @@ export default function VLHDictionaryPage() {
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
       {/* 👑 メインヘッダーの大粛清・デフォルト回帰 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <h1 className="text-xl font-black tracking-tight">パートナー紐付け設定</h1>
+        <h1 className="text-xl font-black tracking-tight">パートナー統合設定</h1>
         {status.type && (
           <div className={`px-4 py-1.5 rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 font-black text-xs ${status.type === 'success' ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400" : "bg-red-500/10 text-red-500 border border-red-500/20 dark:text-red-400"}`}>
             {status.msg}

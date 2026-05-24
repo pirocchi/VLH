@@ -134,7 +134,7 @@ export default function VLHAspPage() {
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
       {/* 👑 メインヘッダーの大粛清・デフォルト回帰 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <h1 className="text-xl font-black tracking-tight">ASP別詳細分析</h1>
+        <h1 className="text-xl font-black tracking-tight">プロバイダ詳細分析</h1>
       </header>
 
       {/* 📡 メインスプリット構造 */}

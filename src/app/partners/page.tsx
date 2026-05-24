@@ -160,7 +160,7 @@ export default function VLHPartnersPage() {
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <h1 className="text-xl font-black tracking-tight">パートナー別詳細</h1>
+        <h1 className="text-xl font-black tracking-tight">パートナー詳細分析</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
