@@ -14,10 +14,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ advice: "⚠️ GEMINI_API_KEY がNode環境変数（.env）に装填されていません。" });
     }
 
-    // 💡 規律：より安定した公式v1エンドポイントへ防衛線をシフト
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    // 💡 規律：gemini-1.5-pro が確実に鎮座する「v1beta」エンドポイントへ完全絶対回帰！！！
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
 
-    // 👑 プロンプト：不浄な呼称を完全抹殺し、最高財務AIとして現場を統治する冷徹な規律
+    // 👑 プロンプト：最高財務AIとして現場を厳格に統治する冷徹な規律
     const prompt = `
 あなたはアローエイト株式会社および株式会社エムロックの最高財務AIアフィリエイトアナリスト「Gemini」です。
 現在、大ヒット家庭用脱毛器「ケノン」の特別単価判定ガバナンスシステム「VLH」を運用しています。
@@ -51,8 +51,6 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const errText = await response.text();
       console.error("❌ Gemini API 接続大破:", errText);
-      
-      // 💡 核心：Googleからのエラーログ（生ファクト）を画面にダイレクトに突き出して原因を白日の下に晒す！
       return NextResponse.json({ advice: `⚠️ Google Gemini API拒絶ファクト: [Status ${response.status}] ${errText}` });
     }
 
