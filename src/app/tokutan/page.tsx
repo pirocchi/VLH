@@ -134,10 +134,9 @@ export default function VLHTokutanPage() {
 
     return Object.values(map).map((p: any) => {
       const cv = p.cv;
+      
+      // 👑 規律：余計なでっち上げ計算を完全パージ。ケノン税込￥79,800に基づく、100%正確な総売上高ファクトのみを算出！
       const totalRevenue = cv * 79800;
-
-      // 🚨 核心：製造原価・送料・決済手数料等を一括パージするための安全な原価構造の定義（例：売上の40%を各種製造物流変動費とする）
-      const otherVariableCosts = totalRevenue * 0.40;
 
       let detectedLevel = 1; 
       let isSpecial = false;
@@ -180,24 +179,18 @@ export default function VLHTokutanPage() {
 
       let partnerProfit = 0;
       let aspProfit = 0;
-      let totalAffiliateCost = 0;
 
       if (isSpecial) {
         partnerProfit = p.rawReward * 0.8; 
         aspProfit = p.rawReward * 0.2;
-        totalAffiliateCost = p.rawReward;
       } else {
         partnerProfit = cv * currentTier.net;
         aspProfit = cv * (currentTier.gross - currentTier.net);
-        totalAffiliateCost = cv * currentTier.gross;
       }
-
-      // 🧠 財務調停：総売上から「アフィリエイト総費用」と「製造・決済・梱包・配送の全変動費」を完全に引き剥がした【真の利益】
-      const 実質利益 = totalRevenue - totalAffiliateCost - otherVariableCosts;
 
       const mainAsp = Object.keys(p.asps).join(" / ");
 
-      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, 実質利益 };
+      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
@@ -413,8 +406,8 @@ export default function VLHTokutanPage() {
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
                   <TokutanKPICard title="アフィリエイター利益" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
                   <TokutanKPICard title="ASPマージン" prefix="￥" value={Math.round(currentPartner.aspProfit).toLocaleString()} icon={Percent} colorClass="text-orange-400 bg-orange-400" />
-                  {/* 👑 大手術：原価・物流コストを引いた本当の「実質利益」を表示！！！ */}
-                  <TokutanKPICard title="実質利益" prefix="￥" value={Math.round(currentPartner.実質利益).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
+                  {/* 👑 完全大粛清：妄想変数（実質利益）を跡形もなく消滅させ、純度100%の正しい『売上』のみを表示！！！ */}
+                  <TokutanKPICard title="売上" prefix="￥" value={Math.round(currentPartner.totalRevenue).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
                 </div>
               </div>
 
