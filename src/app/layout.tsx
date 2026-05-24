@@ -1,8 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 import React, { useState, useEffect, createContext } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
