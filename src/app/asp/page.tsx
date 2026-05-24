@@ -1,6 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 

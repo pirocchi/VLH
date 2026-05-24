@@ -1,6 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
@@ -10,11 +9,9 @@ import {
   Users
 } from "lucide-react";
 
-// 💡 大粛清：isLightによるカラー分岐を完全パージ！Tailwindのセマンティックデフォルト（slate）で統一統治
 const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      {/* 💡 規律：タイトルはデフォルトの補助カラーに統一 */}
       <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">
         {title}
       </span>
@@ -23,7 +20,6 @@ const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: an
       </div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {/* 💡 核心：プレフィックス、サフィックス（￥や回）が保護色にならない絶対補助カラー */}
       {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
       <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
       {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{suffix}</span>}
@@ -79,10 +75,10 @@ export default function VLHDashboardPage() {
       const cvr = clk > 0 ? parseFloat(((cv / clk) * 100).toFixed(2)) : 0.0;
       const roas = cost > 0 ? parseFloat(((revenue / cost) * 100).toFixed(2)) : 0.0;
       const cpa = cv > 0 ? Math.round(cost / cv) : 0;
-      const cpc = clk > 0 ? parseFloat((cost / clk).toFixed(2)) : 0.0;
+      const cpf = clk > 0 ? parseFloat((cost / clk).toFixed(2)) : 0.0;
       const cpm = imp > 0 ? parseFloat(((cost / imp) * 1000).toFixed(2)) : 0.0;
 
-      return { ...row, revenue, ctr, cvr, roas, cpa, cpc, cpm };
+      return { ...row, revenue, ctr, cvr, roas, cpa, cpc: cpf, cpm };
     }).filter(row => {
       if (selectedAsp !== "all" && row.asp !== selectedAsp) return false;
       if (searchMedia && !row.media_name.toLowerCase().includes(searchMedia.toLowerCase()) && !row.media_id.toLowerCase().includes(searchMedia.toLowerCase())) return false;
@@ -133,7 +129,7 @@ export default function VLHDashboardPage() {
       impressions: totalImp, clicks: totalClicks,
       ctr: totalImp > 0 ? parseFloat(((totalClicks / totalImp) * 100).toFixed(2)) : 0.0,
       issued_count: totalIssued,
-      cvr: totalClicks > 0 ? parseFloat(((totalIssued / totalClicks) * 100).toFixed(2)) : 0.0,
+      vcr: totalClicks > 0 ? parseFloat(((totalIssued / totalClicks) * 100).toFixed(2)) : 0.0,
       issued_reward: totalCost, revenue: totalRevenue,
       roas: totalCost > 0 ? parseFloat(((totalRevenue / totalCost) * 100).toFixed(2)) : 0.0,
       cpa: totalIssued > 0 ? Math.round(totalCost / totalIssued) : 0,
@@ -190,12 +186,10 @@ export default function VLHDashboardPage() {
 
   return (
     <div className="w-full space-y-5">
-      {/* 👑 ヘッダーカラー大粛清 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-50">全体ダッシュボード</h1>
       </header>
 
-      {/* 📡 コントロールパネルカラー大粛清 */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-5 transition-all">
         <div className="flex flex-wrap items-center gap-4 border-b pb-4 border-slate-100 dark:border-slate-800/60">
           <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
@@ -246,7 +240,6 @@ export default function VLHDashboardPage() {
         </div>
       </div>
 
-      {/* 📊 メインコンテンツセクション */}
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="border-l-4 border-blue-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">■ 基礎成果セクション</div>
@@ -255,7 +248,7 @@ export default function VLHDashboardPage() {
             <VLHKPICard title="クリック数" value={summary.clicks.toLocaleString()} suffix="回" icon={MousePointer} colorClass="text-orange-400 bg-orange-400" />
             <VLHKPICard title="クリック率" value={summary.ctr.toString()} suffix="％" icon={Percent} colorClass="text-purple-500 bg-purple-500" />
             <VLHKPICard title="コンバージョン数" value={summary.issued_count.toLocaleString()} suffix="件" icon={ShoppingBag} colorClass="text-green-500 bg-green-500" />
-            <VLHKPICard title="コンバージョン率" value={summary.cvr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" />
+            <VLHKPICard title="コンバージョン率" value={summary.vcr.toString()} suffix="％" icon={TrendingUp} colorClass="text-teal-500 bg-teal-500" />
           </div>
           <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -268,7 +261,6 @@ export default function VLHDashboardPage() {
           </div>
         </div>
 
-        {/* 🗺️ 下翼ツインレポートセクションの大粛清 */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 border rounded-2xl p-6 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all">
             <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50"><BarChart3 size={14} className="text-indigo-500" /> ASP別レポート</h3>

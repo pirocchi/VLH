@@ -1,6 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
@@ -9,16 +8,13 @@ import {
   Search, ShieldAlert, Layers, Filter
 } from "lucide-react";
 
-// 💡 大粛清：isLightによるハードコード色を完全パージ！標準セマンティック規律へ移行
 const PartnerKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      {/* 💡 規律：カードのタイトルは標準の補助カラー */}
       <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">{title}</span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}><Icon size={16} /></div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {/* 💡 核心：プレフィックス、サフィックス（￥や回）を完全に認識させるための標準カラー指定 */}
       {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
       <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
       {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{suffix}</span>}
@@ -163,14 +159,11 @@ export default function VLHPartnersPage() {
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
-      {/* 👑 メインタイトルヘッダー大粛清 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">パートナー別詳細</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* 🗺️ 左翼：検索・リストモジュール大粛清 */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
           <div className="flex items-center gap-2">
             <Search size={16} className="text-indigo-500" />
@@ -218,7 +211,7 @@ export default function VLHPartnersPage() {
                   <p className="text-xs md:text-sm truncate font-black">{partner.name}</p>
                   <div className="flex justify-between items-center text-[10px] font-bold opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">ID: {partner.idList}</span>
-                    <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}>￥{Math.round(partner.revenue).toLocaleString()}</span>
+                    <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}><span className="text-[9px] text-slate-400 mr-0.5">￥</span>{Math.round(partner.revenue).toLocaleString()}</span>
                   </div>
                 </div>
               );
@@ -229,11 +222,9 @@ export default function VLHPartnersPage() {
           </div>
         </div>
 
-        {/* 🗺️ 右翼：指標表示コックピット大粛清 */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
-              {/* パートナー基本情報情報カード */}
               <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
                 <div>
                   <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">選択中のパートナー</span>
@@ -246,7 +237,6 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* 11大マトリクス・グリッド */}
               <div className="space-y-4">
                 <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-blue-500 pl-2">■ パートナー単体・基礎成果</div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -268,7 +258,6 @@ export default function VLHPartnersPage() {
                 </div>
               </div>
 
-              {/* ASP内訳テーブル大粛清 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
                   <Layers size={14} className="text-indigo-500" /> ASP別内訳レポート
@@ -310,13 +299,12 @@ export default function VLHPartnersPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
+            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-dashed border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
               <ShieldAlert size={24} className="text-slate-300 dark:text-slate-600"/>
               指定のASPフィルターに合致するパートナー情報が存在しません。
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
