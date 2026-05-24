@@ -102,7 +102,7 @@ export default function VLHUploadPage() {
               <Layers size={20} className="text-indigo-500" /> 成果実績データの一括取り込み
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1 leading-relaxed">
-              各ASPからダウンロードした複数日・複数チャンネルのCSVファイルを、**一括で何個でも同時に放り込めます。** 120ファイルまとめてドロップしても、システム側が自動で日付をサルベージし、各ASPフォルダへ全自動仕分け保存を行います。
+              各ASPからダウンロードした複数日・複数チャンネルのCSVファイルを、一括で何個でも同時に放り込めます。120ファイルまとめてドロップしても、システム側が自動で日付をサルベージし、各ASPフォルダへ全自動仕分け保存を行います。
             </p>
           </div>
 
