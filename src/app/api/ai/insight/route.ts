@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 /**
- * 🧠 POST: パートナーの財務アセットを「Gemini 2.5 Pro」の脳細胞へ送り込み、神速のアドバイスを錬成
+ * 🧠 POST: パートナーの財務アセットを「Gemini 2.5 Pro」の脳細胞へ送り込み、心強い運用アドバイスを生成
  */
 export async function POST(req: NextRequest) {
   try {
@@ -11,16 +11,17 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ advice: "⚠️ GEMINI_API_KEY がNode環境変数（.env）に装填されていません。" });
+      return NextResponse.json({ advice: "⚠️ GEMINI_API_KEY が環境変数に設定されていません。" });
     }
 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
+    // 🤝 プロンプト大刷新：現場の皆様を支える、プロフェッショナルで協力的な「優秀なアドバイザー」のトーンへ
     const prompt = `
-あなたはアローエイト株式会社の最高財務AIアフィリエイトアナリスト「Gemini」です。
-現在、大ヒット家庭用脱毛器「ケノン」の特別単価判定ガバナンスシステム「VLH」を運用しています。
+あなたはアローエイト株式会社および株式会社エムロックのアフィリエイトチームを支える、優秀で誠実な最高財務AIアナリスト「Gemini」です。
+現在、大ヒット家庭用脱毛器「ケノン」の特別単価判定管理システム「VLH」で、運用担当者（福本さんたち現場のメンバー）をサポートしています。
 
-以下の【特定パートナーの当月戦況データ】を冷徹に分析し、運用担当者（現場の福本たち）が次に打つべき具体的な「示唆・交渉アドバイス」を150文字〜200文字程度の【極めて簡潔かつプロフェッショナル、なおかつ力強い文体】で1つだけ生成してください。
+以下の【特定パートナーの当月戦況データ】をベースに、担当者が次の一歩を気持ちよく、かつ戦略的に踏み出せるような「掲載交渉・アプローチのアドバイス」を150文字〜200文字程度の【丁寧なビジネス敬体（です・ます調）で、前向きかつ力強い文体】で1つだけ生成してください。
 
 【特定パートナーの当月戦況データ】
 ■ パートナー名: ${partnerName}
@@ -32,10 +33,10 @@ export async function POST(req: NextRequest) {
 ■ 現在の特別単価判定設定: ${tierName}
 
 【アドバイス生成のガバナンス規律】
-1. 前置きや余計な挨拶、箇条書きは1文字とも出力するな。アドバイスの本論だけをストレートに出力せよ。
-2. 成果数が「0件」の場合は、稼働を再開させるための具体的なアクション（担当営業への突っつき、掲載位置の確認要請など）を指示せよ。
-3. 成果数が急増、または高い影響力を維持している場合は、上のレベルへの特別単価引き上げをエサにした「さらなる広告露出拡大（バナー増設、記事上位固定）」の交渉を仕掛けるよう担当者に命じよ。
-4. 自社の手残り、ASPマージン、アフィリエイター利益の三位一体のバランスから、この媒体が本当に利益貢献しているかを厳格に見極める視点を含めよ。
+1. 挨拶や箇条書き、前置き（「分析結果は以下の通りです」など）は一切不要です。アドバイスの本論だけをストレートに出力してください。
+2. 命令口調（「〜させよ」「〜を命じる」など）や高圧的な表現は絶対に厳禁です。現場のメンバーに並走し、知恵を貸すアドバイザーとしてのスタンス（「〜がおすすめです」「〜を提案してみてはいかがでしょうか」など）を徹底してください。
+3. 成果数が「0件」の場合は、稼働を再開してもらうための具体的なアプローチ方法（掲載位置の確認要請や、直近のケノンの出荷実績130万台という強みを伝えて再アピールするなど）を優しくアドバイスしてください。
+4. 成果数が好調な場合は、さらなる売上拡大に向けて、上のレベルの特別単価をフックにした「バナー増設」や「記事上位固定」の交渉アイデアを提案してください。
 `;
 
     const response = await fetch(geminiUrl, {
@@ -44,7 +45,6 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
-          // 💡 解決：2.5 Proの膨大な思考トークン（Thoughts）を完全に受け止めるため、上限を4000へ大爆増執行！！！
           maxOutputTokens: 4000, 
           temperature: 0.3 
         }
@@ -53,26 +53,19 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("❌ Gemini API 接続大破:", errText);
-      return NextResponse.json({ advice: `⚠️ Google Gemini API拒絶ファクト: [Status ${response.status}] ${errText}` });
+      return NextResponse.json({ advice: `⚠️ Gemini通信エラー: ${errText}` });
     }
 
     const resData = await response.json();
-    
-    // 💡 改善：2.5 Proの広大な応答テキストを厳格にパース
     const aiText = resData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!aiText) {
-      // 思考は回ったが何らかの理由でテキストが出なかった場合の保険露出
-      return NextResponse.json({ 
-        advice: `⚠️ Gemini応答テキスト抽出不可ファクト: ${JSON.stringify(resData)}` 
-      });
+      return NextResponse.json({ advice: "データを正常に分析しましたが、アドバイスの出力が空でした。再度お試しください。" });
     }
 
     const cleanAdvice = aiText.replace(/^[\s"「]+|[\s"」]+$/g, "");
     return NextResponse.json({ advice: cleanAdvice });
   } catch (err: any) {
-    console.error("❌ AIインサイト生成大クラッシュ:", err.message);
-    return NextResponse.json({ advice: `⚠️ システムエラー大破: ${err.message}` });
+    return NextResponse.json({ advice: `⚠️ システムエラー: ${err.message}` });
   }
 }
