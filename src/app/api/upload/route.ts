@@ -3,7 +3,7 @@ import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
 import { promisify } from "util";
-import { put, list } from "@vercelblob";
+import { put, list } from "@vercel/blob";
 
 const execAsync = promisify(exec);
 
