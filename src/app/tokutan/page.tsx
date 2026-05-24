@@ -60,6 +60,10 @@ export default function VLHTokutanPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
+  // 💡 Gemini連携用の新規リアルタイムステート群
+  const [aiAdvice, setAiAdvice] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -83,11 +87,9 @@ export default function VLHTokutanPage() {
 
   const partnersWithEvaluations = useMemo(() => {
     const map: any = {};
-    
-    // 💡 核心：実行時の「当月（現在の年・月）」の境界線を冷徹に定義
     const now = new Date();
     const thisYear = now.getFullYear();
-    const thisMonth = now.getMonth(); // 0-11
+    const thisMonth = now.getMonth();
 
     performanceData.forEach(row => {
       const rawName = row.media_name || "不明なパートナー";
@@ -113,13 +115,11 @@ export default function VLHTokutanPage() {
       const count = row.issued_count || 0;
       const reward = row.issued_reward || 0;
 
-      // 💡 規律1：単価（レベル）の判定用履歴は、過去の動きを見失わないよう「全期間」から正しく抽出
       if (count > 0) {
         const unitCost = reward / count; 
         map[finalName].aspUnitCosts.push({ asp, unitCost });
       }
 
-      // 💡 規律2：【大修正】財務マトリクスとアドバイスに使う成果数は「当月」のみに厳格完全制限！！！
       if (row.date) {
         const dateStr = String(row.date);
         const d = (dateStr.length === 8 && /^\d+$/.test(dateStr)) 
@@ -134,8 +134,8 @@ export default function VLHTokutanPage() {
     });
 
     return Object.values(map).map((p: any) => {
-      const cv = p.cv; // ➔ ここが「当月成果数」に純化！
-      const totalRevenue = cv * 79800; // ➔ 当月のケノン総売上
+      const cv = p.cv;
+      const totalRevenue = cv * 79800;
 
       let detectedLevel = 1; 
       let isSpecial = false;
@@ -190,17 +190,9 @@ export default function VLHTokutanPage() {
         自社残し = totalRevenue - (cv * currentTier.gross);
       }
 
-      // 💡 改善：当月成果（cv）に基づいた、現場の即戦力となる真実のアドバイスを動的生成
-      let adviceMessage = "現在のレベルで安定推移しています。もうしばらくこの特別単価でがんばってもらいましょう。";
-      if (isSpecial) {
-        adviceMessage = "個別契約（特殊単価）が適用されています。担当者に確認をしてください。";
-      } else if (cv > currentTier.maxCV || (cv >= currentTier.minCV && cv > 50)) {
-        adviceMessage = "当月は成果が急増、または高い影響力を維持しています。そろそろ上のレベルへの特別単価付与を検討してみましょう。";
-      } else if (cv === 0) {
-        adviceMessage = "当月の成果はまだありません。今後の動きを注視しましょう。";
-      }
+      const mainAsp = Object.keys(p.asps).join(" / ");
 
-      return { ...p, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, 自社残し, adviceMessage };
+      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, 自社残し };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
@@ -227,12 +219,54 @@ export default function VLHTokutanPage() {
     return found || filteredPartners[0];
   }, [filteredPartners, selectedPartnerName]);
 
+  // 💡 核心：Geminiへの超脳細胞リアルタイム・ホットライン連動プロトコル
+  useEffect(() => {
+    if (!currentPartner) {
+      setAiAdvice("");
+      return;
+    }
+
+    const triggerJimBrain = async () => {
+      try {
+        setAiLoading(true);
+        setAiAdvice("");
+        
+        const aiRes = await fetch("/api/ai/insight", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            partnerName: currentPartner.name,
+            cv: currentPartner.cv,
+            revenue: currentPartner.totalRevenue,
+            partnerProfit: currentPartner.partnerProfit,
+            aspProfit: currentPartner.aspProfit,
+            tierName: currentPartner.currentTier.name,
+            aspName: currentPartner.mainAsp
+          })
+        });
+
+        if (aiRes.ok) {
+          const aiJson = await aiRes.json();
+          setAiAdvice(aiJson.advice);
+        } else {
+          setAiAdvice("⚠️ Geminiの呼び出しに失敗しました。APIキーまたはネットワークの檻を確認してください。");
+        }
+      } catch (err) {
+        setAiAdvice("⚠️ Geminiへの通信が一時的に遮断されました。");
+      } finally {
+        setAiLoading(false);
+      }
+    };
+
+    triggerJimBrain();
+  }, [currentPartner]); // ➔ 選択中のパートナーが切り替わった瞬間、ジムの脳細胞が自動で閃光起動！
+
   if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価判定マトリクス起動中...</div>;
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <h1 className="text-xl font-black tracking-tight">特別単価管理・分析</h1>
+        <h1 className="text-xl font-black tracking-tight">特別単価設定管理</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -281,7 +315,8 @@ export default function VLHTokutanPage() {
             placeholder="メディア名・IDで抽出..."
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
-            className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 " />
+            className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold"
+          />
 
           <div className="border-t border-slate-100 dark:border-slate-800/60 pt-3 h-80 xl:h-[480px] overflow-y-auto space-y-1.5 pr-1">
             {filteredPartners.map((partner, idx) => {
@@ -342,19 +377,26 @@ export default function VLHTokutanPage() {
                 <div className="border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800/80 pt-4 md:pt-0 md:pl-6 flex flex-col justify-center h-full">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
-                      <MessageSquare size={14} /> 運用担当者への示唆・アドバイス
+                      <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI：Gemini直結）
                     </div>
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <p className="text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">
-                        「 {currentPartner.adviceMessage} 」
-                      </p>
+                    {/* 💡 視覚調停：ジムが戦況を分析中であるかをアニメーション付きでクッキリ演出 */}
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
+                      {aiLoading ? (
+                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">
+                          <Flame size={14} className="animate-spin" /> ⚡ Geminiがデータを監査中...
+                        </p>
+                      ) : (
+                        <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">
+                          {aiAdvice ? `「 ${aiAdvice} 」` : "「 監査可能なデータアセットを検出できませんでした。 」"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果と財務内訳（税込）</div>
+                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・三位一体の財務内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
                   <TokutanKPICard title="アフィリエイターの総儲け" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
@@ -417,7 +459,6 @@ export default function VLHTokutanPage() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
