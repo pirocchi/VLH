@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
     const prompt = `
-あなたはアローエイト株式会社および株式会社エムロックの最高財務AIアフィリエイトアナリスト「Gemini」です。
+あなたはアローエイト株式会社の最高財務AIアフィリエイトアナリスト「Gemini」です。
 現在、大ヒット家庭用脱毛器「ケノン」の特別単価判定ガバナンスシステム「VLH」を運用しています。
 
 以下の【特定パートナーの当月戦況データ】を冷徹に分析し、運用担当者（現場の福本たち）が次に打つべき具体的な「示唆・交渉アドバイス」を150文字〜200文字程度の【極めて簡潔かつプロフェッショナル、なおかつ力強い文体】で1つだけ生成してください。
@@ -43,7 +43,11 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 400, temperature: 0.3 }
+        generationConfig: { 
+          // 💡 解決：2.5 Proの膨大な思考トークン（Thoughts）を完全に受け止めるため、上限を4000へ大爆増執行！！！
+          maxOutputTokens: 4000, 
+          temperature: 0.3 
+        }
       })
     });
 
@@ -55,13 +59,13 @@ export async function POST(req: NextRequest) {
 
     const resData = await response.json();
     
-    // 💡 核心：2.5 Proの応答階層を徹底的に安全スキャン
+    // 💡 改善：2.5 Proの広大な応答テキストを厳格にパース
     const aiText = resData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-    // 🚨 【大改造】もしテキストが空、あるいは構造がズレている場合は、生のJSONを丸ごと画面にブチ撒ける！
     if (!aiText) {
+      // 思考は回ったが何らかの理由でテキストが出なかった場合の保険露出
       return NextResponse.json({ 
-        advice: `⚠️ Gemini生JSON構造露出ファクト: ${JSON.stringify(resData)}` 
+        advice: `⚠️ Gemini応答テキスト抽出不可ファクト: ${JSON.stringify(resData)}` 
       });
     }
 
