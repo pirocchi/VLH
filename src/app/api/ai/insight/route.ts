@@ -14,10 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ advice: "⚠️ GEMINI_API_KEY がNode環境変数（.env）に装填されていません。" });
     }
 
-    // 💡 換装：最高司令官の命により、最強モデル「gemini-2.5-pro」の通信パイプラインを完全構築！
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
-    // 👑 プロンプト：最高財務AIとして現場（福本たち）を厳格に統治する冷徹な規律
     const prompt = `
 あなたはアローエイト株式会社および株式会社エムロックの最高財務AIアフィリエイトアナリスト「Gemini」です。
 現在、大ヒット家庭用脱毛器「ケノン」の特別単価判定ガバナンスシステム「VLH」を運用しています。
@@ -56,10 +54,18 @@ export async function POST(req: NextRequest) {
     }
 
     const resData = await response.json();
-    const aiText = resData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "データは正常ですが、Geminiからの応答テキストが空です。";
+    
+    // 💡 核心：2.5 Proの応答階層を徹底的に安全スキャン
+    const aiText = resData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    // 🚨 【大改造】もしテキストが空、あるいは構造がズレている場合は、生のJSONを丸ごと画面にブチ撒ける！
+    if (!aiText) {
+      return NextResponse.json({ 
+        advice: `⚠️ Gemini生JSON構造露出ファクト: ${JSON.stringify(resData)}` 
+      });
+    }
 
     const cleanAdvice = aiText.replace(/^[\s"「]+|[\s"」]+$/g, "");
-
     return NextResponse.json({ advice: cleanAdvice });
   } catch (err: any) {
     console.error("❌ AIインサイト生成大クラッシュ:", err.message);
