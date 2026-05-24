@@ -191,11 +191,11 @@ export default function VLHTokutanPage() {
       }
 
       // 💡 改善：当月成果（cv）に基づいた、現場の即戦力となる真実のアドバイスを動的生成
-      let adviceMessage = "現在のレベルで安定推移しています。もうしばらくこの設定でがんばらせよう。";
+      let adviceMessage = "現在のレベルで安定推移しています。もうしばらくこの特別単価でがんばってもらいましょう。";
       if (isSpecial) {
-        adviceMessage = "個別契約（特殊単価）が適用されています。担当営業の個別交渉ログを確認してください。";
+        adviceMessage = "個別契約（特殊単価）が適用されています。担当者に確認をしてください。";
       } else if (cv > currentTier.maxCV || (cv >= currentTier.minCV && cv > 50)) {
-        adviceMessage = "当月は成果（件数）が急増、または高い影響力を維持しています。そろそろ上のレベルへの特別単価付与を検討してもいいんじゃないか？";
+        adviceMessage = "当月は成果が急増、または高い影響力を維持しています。そろそろ上のレベルへの特別単価付与を検討してみましょう。";
       } else if (cv === 0) {
         adviceMessage = "当月の成果はまだありません。今後の動きを注視しましょう。";
       }
