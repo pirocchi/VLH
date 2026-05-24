@@ -354,7 +354,7 @@ export default function VLHTokutanPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">当月成果と財務内訳（税込）</div>
+                <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果と財務内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
                   <TokutanKPICard title="アフィリエイターの総儲け" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
