@@ -5,20 +5,17 @@ import { ThemeContext } from "../layout";
 import { 
   Layers, MousePointer, Percent, ShoppingBag, TrendingUp,
   DollarSign, ArrowUpRight, Flame, Target, Coins, BarChart3,
-  Clock, CheckCircle, Eye
+  Clock, CheckCircle, Eye, Filter
 } from "lucide-react";
 
 // --- サブコンポーネント: モバイル見切れ防止・KPIカードの大粛清 ---
-// 💡 大粛清：isLightによるカラー分岐を完全パージ！標準セマンティックデフォルト（slate）で統一
 const AspKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      {/* 💡 規律：カードタイトルは標準の補助カラー */}
       <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">{title}</span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}><Icon size={16} /></div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {/* 💡 核心：プレフィックス、サフィックス（￥や回）を完全に認識させるための補助カラー */}
       {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
       <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
       {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{suffix}</span>}
@@ -26,7 +23,7 @@ const AspKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: an
   </div>
 );
 
-// 💡 規律：各ASP特有の「承認ラグ・運用の癖」マスターナレッジ表
+// 各ASP特有の「承認ラグ・運用の癖」マスターナレッジ表
 const ASP_METADATA: Record<string, { rate: string, lag: string, statusColor: string, desc: string }> = {
   "A8.net": { rate: "88%", lag: "平均 30 日", statusColor: "text-emerald-500 bg-emerald-500/10", desc: "国内最大手。承認処理は比較的安定推移するが、月を跨ぐ確定ラグに注意。" },
   "afb": { rate: "92%", lag: "平均 25 日", statusColor: "text-blue-500 bg-blue-500/10", desc: "美容・健康系に強み。確定から振込までの支払スピードが最も速い傾向。" },
@@ -43,6 +40,10 @@ export default function VLHAspPage() {
   const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeAspName, setActiveAspName] = useState<string>("A8.net");
+
+  // 💡 期間フィルター用グローバルステートの大装填
+  const [filterRange, setFilterRange] = useState<string>("all"); 
+  const [customRange, setCustomRange] = useState({ start: "", end: "" });
 
   useEffect(() => {
     const fetchVLHMemory = async () => {
@@ -61,11 +62,52 @@ export default function VLHAspPage() {
     fetchVLHMemory();
   }, []);
 
+  // 💡 核心：生データを指定期間で冷徹に選別・選定するタイムフィルター・パイプライン
+  const baseFilteredData = useMemo(() => {
+    const now = new Date();
+    const getStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const startOfToday = getStartOfDay(now);
+
+    return performanceData.filter(row => {
+      if (!row.date) return true;
+
+      const dateStr = String(row.date);
+      const d = (dateStr.length === 8 && /^\d+$/.test(dateStr)) 
+        ? new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)))
+        : new Date(dateStr);
+      
+      const rowTime = d.getTime();
+      const todayTime = startOfToday.getTime();
+      const oneDayMs = 1000 * 60 * 60 * 24;
+
+      switch (filterRange) {
+        case "yesterday": return rowTime >= todayTime - oneDayMs && rowTime < todayTime;
+        case "7d": return rowTime >= todayTime - (7 * oneDayMs);
+        case "14d": return rowTime >= todayTime - (14 * oneDayMs);
+        case "30d": return rowTime >= todayTime - (30 * oneDayMs);
+        case "1y": return rowTime >= todayTime - (365 * oneDayMs);
+        case "thisMonth": return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        case "lastMonth":
+          const lmMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+          const lmYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+          return d.getMonth() === lmMonth && d.getFullYear() === lmYear;
+        case "custom":
+          if (!customRange.start || !customRange.end) return true;
+          const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
+          const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
+          return rowTime >= startLimit && rowTime <= endLimit;
+        case "all":
+        default: return true;
+      }
+    });
+  }, [performanceData, filterRange, customRange]);
+
   // 🔍 核心：全RAWデータから「ASPチャンネル単位」に11大指標を分配・高速合算
   const aspAggregatedMap = useMemo(() => {
     const map: any = {};
 
-    performanceData.forEach(row => {
+    // 💡 改善：全期間データではなく、期間抽出済みの baseFilteredData をソースに名寄せ集計
+    baseFilteredData.forEach(row => {
       const asp = row.asp || "その他";
       if (asp === "日別レポート") return;
 
@@ -112,7 +154,7 @@ export default function VLHAspPage() {
     });
 
     return resultList;
-  }, [performanceData]);
+  }, [baseFilteredData]);
 
   const currentAspData = useMemo(() => {
     const found = aspAggregatedMap.find(a => a.name === activeAspName);
@@ -132,15 +174,37 @@ export default function VLHAspPage() {
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
-      {/* 👑 メインヘッダーの大粛清・デフォルト回帰 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">プロバイダ詳細分析</h1>
       </header>
 
-      {/* 📡 メインスプリット構造 */}
+      {/* 📡 期間フィルターコントロールパネルのインジェクション */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
+            <Filter size={14} /> 期間切替
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[{l:"全期間", v:"all"}, {l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
+              <button key={range.v} onClick={() => setFilterRange(range.v)} 
+                className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50"}`}>
+                {range.l}
+              </button>
+            ))}
+          </div>
+          {filterRange === "custom" && (
+            <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
+              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
+                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <span className="text-slate-400 dark:text-slate-500 text-sm">~</span>
+              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
+                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* 🗺️ 左翼：ASPチャンネルマスターセレクトリストの大粛清 */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
           <div className="flex items-center gap-2">
             <Layers size={16} className="text-indigo-500" />
@@ -176,10 +240,7 @@ export default function VLHAspPage() {
           </div>
         </div>
 
-        {/* 🗺️ 右翼：指標＆承認特性監査ウォールの大粛清 */}
         <div className="xl:col-span-3 space-y-6">
-          
-          {/* ASP承認ラグ ＆ 確定リスク監査パネルの大粛清 */}
           <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-center transition-all">
             <div className="md:col-span-1">
               <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">承認特性パラメータ</span>
@@ -187,7 +248,6 @@ export default function VLHAspPage() {
               <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1">※動的解析済みデータ</p>
             </div>
 
-            {/* 確定ラグと承認率のツインインテリジェンスバッジの大粛清 */}
             <div className="grid grid-cols-2 gap-4 md:col-span-2 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800/80 pt-4 md:pt-0 md:pl-6">
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 dark:text-slate-500"><CheckCircle size={12}/> 平均承認率</div>
@@ -203,7 +263,6 @@ export default function VLHAspPage() {
             </div>
           </div>
 
-          {/* 11大指標コックピット */}
           <div className="space-y-4">
             <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-blue-500 pl-2">■ チャンネル基礎成果</div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -225,7 +284,6 @@ export default function VLHAspPage() {
             </div>
           </div>
 
-          {/* 全チャンネル財務効率一覧テーブルの大粛清 */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
             <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
               <BarChart3 size={14} className="text-indigo-500" /> ASPチャンネル別・財務効率クロス一覧表

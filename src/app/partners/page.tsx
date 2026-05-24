@@ -30,6 +30,10 @@ export default function VLHPartnersPage() {
   const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
   
+  // 💡 期間フィルター用ステートの大装填
+  const [filterRange, setFilterRange] = useState<string>("all"); 
+  const [customRange, setCustomRange] = useState({ start: "", end: "" });
+
   const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
@@ -55,10 +59,51 @@ export default function VLHPartnersPage() {
     initializeData();
   }, []);
 
+  // 💡 核心：生データを指定期間で冷徹に選別するタイムフィルター・パイプライン
+  const baseFilteredData = useMemo(() => {
+    const now = new Date();
+    const getStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const startOfToday = getStartOfDay(now);
+
+    return performanceData.filter(row => {
+      if (!row.date) return true;
+
+      const dateStr = String(row.date);
+      const d = (dateStr.length === 8 && /^\d+$/.test(dateStr)) 
+        ? new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)))
+        : new Date(dateStr);
+      
+      const rowTime = d.getTime();
+      const todayTime = startOfToday.getTime();
+      const oneDayMs = 1000 * 60 * 60 * 24;
+
+      switch (filterRange) {
+        case "yesterday": return rowTime >= todayTime - oneDayMs && rowTime < todayTime;
+        case "7d": return rowTime >= todayTime - (7 * oneDayMs);
+        case "14d": return rowTime >= todayTime - (14 * oneDayMs);
+        case "30d": return rowTime >= todayTime - (30 * oneDayMs);
+        case "1y": return rowTime >= todayTime - (365 * oneDayMs);
+        case "thisMonth": return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        case "lastMonth":
+          const lmMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+          const lmYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+          return d.getMonth() === lmMonth && d.getFullYear() === lmYear;
+        case "custom":
+          if (!customRange.start || !customRange.end) return true;
+          const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
+          const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
+          return rowTime >= startLimit && rowTime <= endLimit;
+        case "all":
+        default: return true;
+      }
+    });
+  }, [performanceData, filterRange, customRange]);
+
   const partnersAggregated = useMemo(() => {
     const map: any = {};
 
-    performanceData.forEach(row => {
+    // 💡 改善：全期間データではなく、期間抽出済みの baseFilteredData をソースに名寄せ集計
+    baseFilteredData.forEach(row => {
       const rawName = row.media_name || "不明なパートナー";
       const rawId = row.media_id || "N/A";
       if (!rawName || rawName === "日別レポート") return; 
@@ -115,7 +160,7 @@ export default function VLHPartnersPage() {
         cpm: p.impressions > 0 ? parseFloat(((cost / p.impressions) * 1000).toFixed(2)) : 0.0
       };
     }).sort((a: any, b: any) => b.revenue - a.revenue);
-  }, [performanceData, dictData]);
+  }, [baseFilteredData, dictData]);
 
   const searchedPartners = useMemo(() => {
     return partnersAggregated.filter(p => {
@@ -162,6 +207,32 @@ export default function VLHPartnersPage() {
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">パートナー詳細分析</h1>
       </header>
+
+      {/* 📡 期間フィルターコントロールパネルのインジェクション */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
+            <Filter size={14} /> 期間切替
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[{l:"全期間", v:"all"}, {l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
+              <button key={range.v} onClick={() => setFilterRange(range.v)} 
+                className={`px-3 py-2 rounded-lg text-xs font-black transition-all ${filterRange === range.v ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50"}`}>
+                {range.l}
+              </button>
+            ))}
+          </div>
+          {filterRange === "custom" && (
+            <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
+              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
+                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <span className="text-slate-400 dark:text-slate-500 text-sm">~</span>
+              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
+                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
@@ -232,7 +303,7 @@ export default function VLHPartnersPage() {
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
                 </div>
                 <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-6 flex-shrink-0">
-                  <span className="text-xs font-black text-slate-400 dark:text-slate-500 block">総売上</span>
+                  <span className="text-xs font-black text-slate-400 dark:text-slate-500 block">選択期間売上</span>
                   <span className="text-3xl font-black text-emerald-500 dark:text-emerald-400 block mt-1">￥{Math.round(currentPartner.revenue).toLocaleString()}</span>
                 </div>
               </div>
