@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
   Crown, ArrowUp, ArrowRight, ShieldAlert, Award, 
-  Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare
+  Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare, BrainCircuit
 } from "lucide-react";
 
 const TokutanKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
@@ -60,7 +60,7 @@ export default function VLHTokutanPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
-  // 💡 Gemini連携用のリアルタイムステート
+  // Gemini連携用のリアルタイムステート
   const [aiAdvice, setAiAdvice] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
 
@@ -219,47 +219,45 @@ export default function VLHTokutanPage() {
     return found || filteredPartners[0];
   }, [filteredPartners, selectedPartnerName]);
 
-  // 💡 核心：Geminiへの超脳細胞リアルタイム・ホットライン連動プロトコル
+  // 💡 規律：パートナーを切り替えたら、前の古いアドバイス文は即座にクリアする
   useEffect(() => {
-    if (!currentPartner) {
+    setAiAdvice("");
+  }, [currentPartner]);
+
+  // 👑 核心：オンデマンド手動実行用のクリックハンドラー
+  const handleGenerateAdvice = async () => {
+    if (!currentPartner) return;
+    
+    try {
+      setAiLoading(true);
       setAiAdvice("");
-      return;
-    }
+      
+      const aiRes = await fetch("/api/ai/insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          partnerName: currentPartner.name,
+          cv: currentPartner.cv,
+          revenue: currentPartner.totalRevenue,
+          partnerProfit: currentPartner.partnerProfit,
+          aspProfit: currentPartner.aspProfit,
+          tierName: currentPartner.currentTier.name,
+          aspName: currentPartner.mainAsp
+        })
+      });
 
-    const triggerGeminiBrain = async () => {
-      try {
-        setAiLoading(true);
-        setAiAdvice("");
-        
-        const aiRes = await fetch("/api/ai/insight", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            partnerName: currentPartner.name,
-            cv: currentPartner.cv,
-            revenue: currentPartner.totalRevenue,
-            partnerProfit: currentPartner.partnerProfit,
-            aspProfit: currentPartner.aspProfit,
-            tierName: currentPartner.currentTier.name,
-            aspName: currentPartner.mainAsp
-          })
-        });
-
-        if (aiRes.ok) {
-          const aiJson = await aiRes.json();
-          setAiAdvice(aiJson.advice);
-        } else {
-          setAiAdvice("⚠️ Geminiの呼び出しに失敗しました。APIキーまたはネットワークの檻を確認してください。");
-        }
-      } catch (err) {
-        setAiAdvice("⚠️ Geminiへの通信が一時的に遮断されました。");
-      } finally {
-        setAiLoading(false);
+      if (aiRes.ok) {
+        const aiJson = await aiRes.json();
+        setAiAdvice(aiJson.advice);
+      } else {
+        setAiAdvice("⚠️ Geminiの呼び出しに失敗しました。APIキーまたはネットワークの檻を確認してください。");
       }
-    };
-
-    triggerGeminiBrain();
-  }, [currentPartner]); // ➔ 選択中のパートナーが切り替わった瞬間、Geminiの脳細胞が自動で閃光起動！
+    } catch (err) {
+      setAiAdvice("⚠️ Geminiへの通信が一時的に遮断されました。");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価判定マトリクス起動中...</div>;
 
@@ -376,17 +374,30 @@ export default function VLHTokutanPage() {
 
                 <div className="border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800/80 pt-4 md:pt-0 md:pl-6 flex flex-col justify-center h-full">
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
-                      <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI：Gemini直結）
+                    {/* 📡 調停：ヘッダー部分にオンデマンド実行ボタンをビシッとインジェクション */}
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
+                        <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI：Gemini直結）
+                      </div>
+                      
+                      <button
+                        onClick={handleGenerateAdvice}
+                        disabled={aiLoading || !currentPartner}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 text-white disabled:text-slate-400 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 flex-shrink-0 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:disabled:bg-slate-950 dark:disabled:text-slate-700 border border-transparent dark:disabled:border-slate-800"
+                      >
+                        <BrainCircuit size={13} className={aiLoading ? "animate-spin" : ""} />
+                        {aiLoading ? "分析中..." : "AI分析を実行"}
+                      </button>
                     </div>
+
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
                       {aiLoading ? (
                         <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">
-                          <Flame size={14} className="animate-spin" /> ⚡ Geminiがデータを監査中...
+                          <Flame size={14} className="animate-spin" /> ⚡ Gemini 2.5 Proが戦況データを高度監査中...
                         </p>
                       ) : (
                         <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">
-                          {aiAdvice ? `「 ${aiAdvice} 」` : "「 監査可能なデータアセットを検出できませんでした。 」"}
+                          {aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在の戦況データをベースにした掲載交渉アイデアをGeminiが生成します。 」"}
                         </p>
                       )}
                     </div>
@@ -452,7 +463,7 @@ export default function VLHTokutanPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
+            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-sm font-bold flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-white dark:bg-slate-900 shadow-sm">
               <ShieldAlert size={24} className="text-slate-300 dark:text-slate-600"/>
               指定のクロスフィルターに合致するパートナー情報が存在しません。
             </div>
