@@ -7,17 +7,13 @@ import {
   Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare
 } from "lucide-react";
 
-// --- サブコンポーネント: 特別単価専用KPIカードの大粛清 ---
-// 💡 大粛清：isLightによるカラー分岐を完全パージ！標準セマンティックデフォルト（slate）で統一
 const TokutanKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      {/* 💡 規律：カードタイトルは標準の補助カラー */}
       <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">{title}</span>
       <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}><Icon size={16} /></div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
-      {/* 💡 核心：プレフィックス、サフィックス（￥や件、マージン）を完全に認識させるための標準カラー指定 */}
       {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
       <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
       {suffix && <span className="text-xs md:text-sm font-black ml-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{suffix}</span>}
@@ -25,42 +21,29 @@ const TokutanKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }
   </div>
 );
 
-// 💡 規律：税込グロス／ネット特別単価マスターテーブル
 const TOKUTAN_MASTER_TABLE = [
   { level: 1, name: "レベル1（通常）", minCV: 0,   maxCV: 10,   gross: 16500, net: 13200 },
-  { level: 2, name: "レベル2",        minCV: 11,  maxCV: 20,  gross: 17600, net: 14300 },
-  { level: 3, name: "レベル3",        minCV: 21,  maxCV: 30,  gross: 19250, net: 15400 },
-  { level: 4, name: "レベル4",        minCV: 31,  maxCV: 50,  gross: 20900, net: 16500 },
+  { level: 2, name: "レベル2",        minCV: 11,  maxCV: 20,   gross: 17600, net: 14300 },
+  { level: 3, name: "レベル3",        minCV: 21,  maxCV: 30,   gross: 19250, net: 15400 },
+  { level: 4, name: "レベル4",        minCV: 31,  maxCV: 50,   gross: 20900, net: 16500 },
   { level: 5, name: "レベル5",        minCV: 51,  maxCV: 100, gross: 22550, net: 17600 },
   { level: 6, name: "レベル6",        minCV: 101, maxCV: 200, gross: 24200, net: 19800 },
   { level: 7, name: "レベル7",        minCV: 201, maxCV: 300, gross: 25850, net: 22000 },
   { level: 8, name: "レベル8（上限）", minCV: 301, maxCV: 9999,gross: 29150, net: 24200 },
 ];
 
-// 💡 改善：レベル（Lv）別の背景色も、ベース背景（ホワイト／スレート900）に美しく馴染む純粋なデフォルト輝度へ調停
 const getLevelBadgeClass = (level: number, isSpecial: boolean) => {
-  if (isSpecial) {
-    return "bg-purple-600 text-white font-black shadow-sm shadow-purple-500/10";
-  }
+  if (isSpecial) return "bg-purple-600 text-white font-black shadow-sm shadow-purple-500/10";
   switch (level) {
-    case 1:
-      return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/40";
-    case 2:
-      return "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300";
-    case 3:
-      return "bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300";
-    case 4:
-      return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300";
-    case 5:
-      return "bg-yellow-50 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400";
-    case 6:
-      return "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400";
-    case 7:
-      return "bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400";
-    case 8:
-      return "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/10";
-    default:
-      return "bg-slate-100 text-slate-700";
+    case 1: return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/40";
+    case 2: return "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300";
+    case 3: return "bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300";
+    case 4: return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300";
+    case 5: return "bg-yellow-50 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400";
+    case 6: return "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400";
+    case 7: return "bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400";
+    case 8: return "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/10";
+    default: return "bg-slate-100 text-slate-700";
   }
 };
 
@@ -100,6 +83,11 @@ export default function VLHTokutanPage() {
 
   const partnersWithEvaluations = useMemo(() => {
     const map: any = {};
+    
+    // 💡 核心：実行時の「当月（現在の年・月）」の境界線を冷徹に定義
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const thisMonth = now.getMonth(); // 0-11
 
     performanceData.forEach(row => {
       const rawName = row.media_name || "不明なパートナー";
@@ -119,23 +107,35 @@ export default function VLHTokutanPage() {
         map[finalName] = { name: finalName, cv: 0, rawReward: 0, ids: new Set<string>(), aspUnitCosts: [], asps: {} };
       }
 
-      const count = row.issued_count || 0;
-      const reward = row.issued_reward || 0;
-
-      map[finalName].cv += count;
-      map[finalName].rawReward += reward;
       map[finalName].ids.add(rawId);
       map[finalName].asps[asp] = true;
 
+      const count = row.issued_count || 0;
+      const reward = row.issued_reward || 0;
+
+      // 💡 規律1：単価（レベル）の判定用履歴は、過去の動きを見失わないよう「全期間」から正しく抽出
       if (count > 0) {
         const unitCost = reward / count; 
         map[finalName].aspUnitCosts.push({ asp, unitCost });
       }
+
+      // 💡 規律2：【大修正】財務マトリクスとアドバイスに使う成果数は「当月」のみに厳格完全制限！！！
+      if (row.date) {
+        const dateStr = String(row.date);
+        const d = (dateStr.length === 8 && /^\d+$/.test(dateStr)) 
+          ? new Date(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(4, 6)) - 1, parseInt(dateStr.slice(6, 8)))
+          : new Date(dateStr);
+        
+        if (d.getFullYear() === thisYear && d.getMonth() === thisMonth) {
+          map[finalName].cv += count;
+          map[finalName].rawReward += reward;
+        }
+      }
     });
 
     return Object.values(map).map((p: any) => {
-      const cv = p.cv;
-      const totalRevenue = cv * 79800; 
+      const cv = p.cv; // ➔ ここが「当月成果数」に純化！
+      const totalRevenue = cv * 79800; // ➔ 当月のケノン総売上
 
       let detectedLevel = 1; 
       let isSpecial = false;
@@ -190,6 +190,7 @@ export default function VLHTokutanPage() {
         自社残し = totalRevenue - (cv * currentTier.gross);
       }
 
+      // 💡 改善：当月成果（cv）に基づいた、現場の即戦力となる真実のアドバイスを動的生成
       let adviceMessage = "現在のレベルで安定推移しています。もうしばらくこの設定でがんばらせよう。";
       if (isSpecial) {
         adviceMessage = "個別契約（特殊単価）が適用されています。担当営業の個別交渉ログを確認してください。";
@@ -230,14 +231,11 @@ export default function VLHTokutanPage() {
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
-      {/* 👑 メインタイトルヘッダー大粛清 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">特別単価設定管理</h1>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* 🗺️ 左翼：多次元クロスフィルターモジュール大粛清 */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
           <div className="flex items-center gap-2">
             <Search size={16} className="text-indigo-500" />
@@ -245,7 +243,6 @@ export default function VLHTokutanPage() {
           </div>
 
           <div className="space-y-2 mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-            {/* ASPセレクトボックス */}
             <div className="flex items-center gap-2">
               <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
               <select 
@@ -263,7 +260,6 @@ export default function VLHTokutanPage() {
               </select>
             </div>
 
-            {/* 特別単価レベル・セレクトボックス */}
             <div className="flex items-center gap-2">
               <Crown size={12} className="text-indigo-500 flex-shrink-0" />
               <select 
@@ -285,8 +281,7 @@ export default function VLHTokutanPage() {
             placeholder="メディア名・IDで抽出..."
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
-            className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold"
-          />
+            className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 " />
 
           <div className="border-t border-slate-100 dark:border-slate-800/60 pt-3 h-80 xl:h-[480px] overflow-y-auto space-y-1.5 pr-1">
             {filteredPartners.map((partner, idx) => {
@@ -309,7 +304,7 @@ export default function VLHTokutanPage() {
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-bold opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">当月成果: {partner.cv} 件</span>
-                    <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}>￥{Math.round(partner.totalRevenue).toLocaleString()}</span>
+                    <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}><span className="text-[9px] text-slate-400 mr-0.5">￥</span>{Math.round(partner.totalRevenue).toLocaleString()}</span>
                   </div>
                 </div>
               );
@@ -320,11 +315,9 @@ export default function VLHTokutanPage() {
           </div>
         </div>
 
-        {/* 🗺️ 右翼：特別単価判定コックピット大粛清 */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
-              {/* リアルタイム判定ステータスカード */}
               <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 items-center transition-all">
                 <div>
                   <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">リアルタイム単価判定</span>
@@ -346,7 +339,6 @@ export default function VLHTokutanPage() {
                   </div>
                 </div>
 
-                {/* 運用判断アドバイス文の大粛清 */}
                 <div className="border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800/80 pt-4 md:pt-0 md:pl-6 flex flex-col justify-center h-full">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
@@ -361,7 +353,6 @@ export default function VLHTokutanPage() {
                 </div>
               </div>
 
-              {/* 三位一体の財務内訳大粛清 */}
               <div className="space-y-2">
                 <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・三位一体の財務内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -372,7 +363,6 @@ export default function VLHTokutanPage() {
                 </div>
               </div>
 
-              {/* 特別単価ガバナンス基準表の大粛清 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
                   <Filter size={14} className="text-indigo-500" /> ケノン特別単価・ガバナンス基準表（グロス・ネット完全版）
