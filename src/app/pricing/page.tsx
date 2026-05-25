@@ -77,7 +77,7 @@ export default function PricingPage() {
                 <input type="text" value={item.partner_name} onChange={(e) => handleChange(idx, "partner_name", e.target.value)} placeholder="例: QUORIZa専用サイトA" className="w-full px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-sm focus:border-indigo-500 focus:outline-none" />
               </div>
               <div className="w-48">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 block mb-1">発生単価 (税抜・円)</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 block mb-1">発生単価 (税込グロス・円)</label>
                 <input type="number" value={item.unit_price} onChange={(e) => handleChange(idx, "unit_price", Number(e.target.value))} className="w-full px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-black text-sm text-indigo-600 dark:text-indigo-400 focus:border-indigo-500 focus:outline-none" />
               </div>
               <button onClick={() => handleRemove(idx)} className="mt-5 p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
