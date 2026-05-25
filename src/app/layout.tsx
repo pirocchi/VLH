@@ -4,7 +4,7 @@ import React, { useState, useEffect, createContext } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { 
-  Users, Layers, Crown, BookOpen,
+  Users, Layers, Crown, Upload, BookOpen, Coins,
   Sun, Moon, Clock, LayoutDashboard, ChevronRight
 } from "lucide-react";
 import Link from "next/link";
