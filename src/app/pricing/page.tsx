@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Coins, Save, Plus, Trash2, CheckCircle } from "lucide-react";
+import { Save, Plus, Trash2, CheckCircle } from "lucide-react"; // 👑 不要な Coins アイコンを削除
 
 export default function PricingPage() {
   const [prices, setPrices] = useState<{ partner_name: string; unit_price: number }[]>([]);
@@ -46,28 +46,24 @@ export default function PricingPage() {
     setTimeout(() => setSavedStatus(false), 3000);
   };
 
-  if (loading) return <div className="p-8 font-bold text-indigo-500 animate-pulse">単価設定データ展開中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">単価設定データ展開中...</div>; // 👑 ロード画面も他ページと統一
 
   return (
-    <div className="w-full space-y-6 text-slate-900 dark:text-slate-50">
-      <header className="px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div>
-          <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
-            <Coins className="text-indigo-500" size={24} /> 手動・特殊単価設定
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-bold">
-            QUORIZaなど、金額データを持たない特殊パートナーの「1件あたりの単価」を定義します。
-          </p>
-        </div>
+    <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
+      
+      {/* 👑 ヘッダー部分を他のページと完全統一！余計なアイコン・説明文を排除！ */}
+      <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+        <h1 className="text-xl font-black tracking-tight">手動・特殊単価設定</h1>
         <button 
           onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl transition-all shadow-sm disabled:opacity-50"
+          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl transition-all shadow-sm disabled:opacity-50 text-sm"
         >
-          {saving ? <span className="animate-pulse">保存中...</span> : savedStatus ? <><CheckCircle size={18}/> 保存完了</> : <><Save size={18} /> 設定を保存</>}
+          {saving ? <span className="animate-pulse">保存中...</span> : savedStatus ? <><CheckCircle size={16}/> 保存完了</> : <><Save size={16} /> 設定を保存</>}
         </button>
       </header>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+      {/* 👑 余白（space-y-5）とコンテナデザインの統一 */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
         <button onClick={handleAdd} className="mb-6 flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-950 dark:hover:bg-slate-800 dark:text-slate-300 font-black text-sm rounded-lg transition-colors border border-slate-200 dark:border-slate-800">
           <Plus size={16} /> 新規パートナーを追加
         </button>
