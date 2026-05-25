@@ -105,7 +105,7 @@ export default function VLHDashboardPage() {
         case "custom":
           if (!customRange.start || !customRange.end) return true;
           const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
-          const endLimit = getStartOfDay(new Date(customRange.end)).getTime();
+          const endLimit = getStartOfDay(new Date(customRange.end)).getTime() + (24 * 60 * 60 * 1000) - 1;
           return rowTime >= startLimit && rowTime <= endLimit;
         case "all":
         default: return true;
