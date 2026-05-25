@@ -31,6 +31,7 @@ export default function RootLayout({
     { name: "パートナー統合設定", path: "/dictionary", icon: BookOpen },
     { name: "プロバイダ詳細分析", path: "/asp", icon: Layers },
     { name: "特別単価管理・分析", path: "/tokutan", icon: Crown },
+    { name: "手動・特殊単価設定", path: "/pricing", icon: Coins },
   ];
 
   // 💡 大解放：臆病なフィルターを完全撤廃し、初期状態からデータ入庫メニューを100%常時装填！
