@@ -277,7 +277,7 @@ export default function VLHDashboardPage() {
           </div>
           <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <VLHKPICard title="広告費(グロス税込)" prefix="￥" value={Math.round(summary.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+            <VLHKPICard title="広告費" prefix="￥" value={Math.round(summary.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
             <VLHKPICard title="売上" prefix="￥" value={Math.round(summary.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
             <VLHKPICard title="ROAS" value={summary.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
             <VLHKPICard title="CPM" prefix="￥" value={Math.round(summary.current_cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
@@ -296,7 +296,7 @@ export default function VLHDashboardPage() {
                     <th className="pb-3 text-left hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("name")}>ASP {renderSortIcon("name")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("impressions")}>インプレッション数 {renderSortIcon("impressions")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("clicks")}>クリック数 {renderSortIcon("clicks")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("normalized_gross")}>広告費(グロス税込) {renderSortIcon("normalized_gross")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("normalized_gross")}>広告費 {renderSortIcon("normalized_gross")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("roas")}>ROAS {renderSortIcon("roas")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("cpa")}>CPA {renderSortIcon("cpa")}</th>
                   </tr>
