@@ -8,7 +8,6 @@ import {
   Clock, CheckCircle, Eye, Filter
 } from "lucide-react";
 
-// --- サブコンポーネント: モバイル見切れ防止・KPIカードの大粛清 ---
 const AspKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
@@ -23,7 +22,6 @@ const AspKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: an
   </div>
 );
 
-// 各ASP特有の「承認ラグ・運用の癖」マスターナレッジ表
 const ASP_METADATA: Record<string, { rate: string, lag: string, statusColor: string, desc: string }> = {
   "A8.net": { rate: "88%", lag: "平均 30 日", statusColor: "text-emerald-500 bg-emerald-500/10", desc: "国内最大手。承認処理は比較的安定推移するが、月を跨ぐ確定ラグに注意。" },
   "afb": { rate: "92%", lag: "平均 25 日", statusColor: "text-blue-500 bg-blue-500/10", desc: "美容・健康系に強み。確定から振込までの支払スピードが最も速い傾向。" },
@@ -41,7 +39,6 @@ export default function VLHAspPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeAspName, setActiveAspName] = useState<string>("A8.net");
 
-  // 💡 期間フィルター用グローバルステートの大装填
   const [filterRange, setFilterRange] = useState<string>("all"); 
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
 
@@ -62,7 +59,6 @@ export default function VLHAspPage() {
     fetchVLHMemory();
   }, []);
 
-  // 💡 核心：生データを指定期間で冷徹に選別・選定するタイムフィルター・パイプライン
   const baseFilteredData = useMemo(() => {
     const now = new Date();
     const getStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -102,48 +98,32 @@ export default function VLHAspPage() {
     });
   }, [performanceData, filterRange, customRange]);
 
-  // 🔍 核心：全RAWデータから「ASPチャンネル単位」に11大指標を分配・高速合算
   const aspAggregatedMap = useMemo(() => {
     const map: any = {};
 
-    // 💡 改善：全期間データではなく、期間抽出済みの baseFilteredData をソースに名寄せ集計
     baseFilteredData.forEach(row => {
       const asp = row.asp || "その他";
       if (asp === "日別レポート") return;
 
       if (!map[asp]) {
-        map[asp] = {
-          name: asp,
-          impressions: 0,
-          clicks: 0,
-          issued_count: 0,
-          issued_reward: 0,
-          partnerCount: new Set()
-        };
+        map[asp] = { name: asp, impressions: 0, clicks: 0, issued_count: 0, normalized_gross: 0, partnerCount: new Set() };
       }
 
       map[asp].impressions += (row.impressions || 0);
       map[asp].clicks += (row.clicks || 0);
       map[asp].issued_count += (row.issued_count || 0);
-      map[asp].issued_reward += (row.issued_reward || 0);
-      if (row.media_name) {
-        map[asp].partnerCount.add(row.media_name);
-      }
+      map[asp].normalized_gross += (row.normalized_gross || 0); // 👑 修正
+      if (row.media_name) map[asp].partnerCount.add(row.media_name);
     });
 
-    const resultList = Object.values(map).map((a: any) => {
+    return Object.values(map).map((a: any) => {
       const cv = a.issued_count;
-      const cost = a.issued_reward;
-      const revenue = cv * 79800; // 国内実績130万台ケノン価格（税込￥79,800）
+      const cost = a.normalized_gross;
+      const revenue = cv * 79800;
 
       return {
-        name: a.name,
-        impressions: a.impressions,
-        clicks: a.clicks,
-        issued_count: cv,
-        issued_reward: cost,
-        revenue,
-        partnerCount: a.partnerCount.size,
+        name: a.name, impressions: a.impressions, clicks: a.clicks, issued_count: cv,
+        normalized_gross: cost, revenue, partnerCount: a.partnerCount.size,
         ctr: a.impressions > 0 ? parseFloat(((a.clicks / a.impressions) * 100).toFixed(2)) : 0.0,
         cvr: a.clicks > 0 ? parseFloat(((cv / a.clicks) * 100).toFixed(2)) : 0.0,
         roas: cost > 0 ? parseFloat(((revenue / cost) * 100).toFixed(2)) : 0.0,
@@ -152,16 +132,13 @@ export default function VLHAspPage() {
         cpm: a.impressions > 0 ? parseFloat(((cost / a.impressions) * 1000).toFixed(2)) : 0.0
       };
     });
-
-    return resultList;
   }, [baseFilteredData]);
 
   const currentAspData = useMemo(() => {
     const found = aspAggregatedMap.find(a => a.name === activeAspName);
     if (found) return found;
-    
     return {
-      name: activeAspName, impressions: 0, clicks: 0, issued_count: 0, issued_reward: 0,
+      name: activeAspName, impressions: 0, clicks: 0, issued_count: 0, normalized_gross: 0,
       revenue: 0, partnerCount: 0, ctr: 0, cvr: 0, roas: 0, cpa: 0, cpc: 0, cpm: 0
     };
   }, [aspAggregatedMap, activeAspName]);
@@ -178,7 +155,6 @@ export default function VLHAspPage() {
         <h1 className="text-xl font-black tracking-tight">プロバイダ詳細分析</h1>
       </header>
 
-      {/* 📡 期間フィルターコントロールパネルのインジェクション */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
@@ -194,11 +170,9 @@ export default function VLHAspPage() {
           </div>
           {filterRange === "custom" && (
             <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
-              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
-                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
               <span className="text-slate-400 dark:text-slate-500 text-sm">~</span>
-              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
-                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
             </div>
           )}
         </div>
@@ -218,15 +192,7 @@ export default function VLHAspPage() {
               const totalCv = liveData ? liveData.issued_count : 0;
 
               return (
-                <div 
-                  key={idx}
-                  onClick={() => setActiveAspName(aspName)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-center border ${
-                    isSelected 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" 
-                      : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"
-                  }`}
-                >
+                <div key={idx} onClick={() => setActiveAspName(aspName)} className={`p-4 rounded-xl cursor-pointer transition-all flex justify-between items-center border ${isSelected ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"}`}>
                   <div>
                     <p className="text-xs md:text-sm font-black">{aspName}</p>
                     <p className="text-[10px] opacity-80 mt-0.5 text-slate-400 dark:text-slate-500 font-bold">提携パートナー数: {liveData ? liveData.partnerCount : 0} 媒体</p>
@@ -275,7 +241,7 @@ export default function VLHAspPage() {
 
             <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ チャンネル広告運用財務効率</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              <AspKPICard title="発生報酬額" prefix="￥" value={Math.round(currentAspData.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+              <AspKPICard title="広告費(グロス税込)" prefix="￥" value={Math.round(currentAspData.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
               <AspKPICard title="発生累積売上高" prefix="￥" value={Math.round(currentAspData.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
               <AspKPICard title="費用対効果（ROAS）" value={currentAspData.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
               <AspKPICard title="CPM" prefix="￥" value={Math.round(currentAspData.cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
@@ -285,9 +251,7 @@ export default function VLHAspPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
-            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
-              <BarChart3 size={14} className="text-indigo-500" /> ASPチャンネル別・財務効率クロス一覧表
-            </h3>
+            <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50"><BarChart3 size={14} className="text-indigo-500" /> ASPチャンネル別・財務効率クロス一覧表</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                 <thead>
@@ -296,7 +260,7 @@ export default function VLHAspPage() {
                     <th className="pb-3 text-right">提携パートナー</th>
                     <th className="pb-3 text-right">クリック数</th>
                     <th className="pb-3 text-right">コンバージョン数</th>
-                    <th className="pb-3 text-right">発生報酬額</th>
+                    <th className="pb-3 text-right">広告費(グロス税込)</th>
                     <th className="pb-3 text-right">ROAS</th>
                     <th className="pb-3 text-right">平均CPA</th>
                     <th className="pb-3 text-center">平均承認率</th>
@@ -309,36 +273,23 @@ export default function VLHAspPage() {
                     const isCurrent = asp.name === activeAspName;
                     return (
                       <tr key={idx} className={`transition-colors ${isCurrent ? "bg-indigo-500/10 dark:bg-indigo-500/20 hover:bg-indigo-500/20" : "hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10"}`}>
-                        <td className="py-4 font-black text-slate-900 dark:text-slate-50 flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}
-                        </td>
+                        <td className="py-4 font-black text-slate-900 dark:text-slate-50 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
                         <td className="py-4 text-right opacity-70 text-slate-500 dark:text-slate-400">{asp.partnerCount} 媒体</td>
                         <td className="py-4 text-right text-slate-700 dark:text-slate-300">{asp.clicks.toLocaleString()} 回</td>
                         <td className="py-4 text-right text-green-500 dark:text-green-400">{asp.issued_count} 件</td>
-                        <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.issued_reward).toLocaleString()}</td>
+                        <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.normalized_gross).toLocaleString()}</td>
                         <td className="py-4 text-right text-yellow-600 dark:text-yellow-400 font-black">{asp.roas}％</td>
                         <td className="py-4 text-right text-pink-500 dark:text-pink-400">￥{Math.round(asp.cpa).toLocaleString()}</td>
-                        <td className="py-4 text-center">
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black">
-                            {meta.rate}
-                          </span>
-                        </td>
+                        <td className="py-4 text-center"><span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black">{meta.rate}</span></td>
                         <td className="py-4 text-center text-slate-400 dark:text-slate-500 font-mono">{meta.lag}</td>
                       </tr>
                     );
                   })}
-                  {aspAggregatedMap.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="text-center py-8 text-slate-400 dark:text-slate-500 font-bold">データ未入庫です。CSVを読み込ませてください。</td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
   );

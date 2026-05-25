@@ -5,19 +5,14 @@ import { ThemeContext } from "../layout";
 import { 
   Layers, MousePointer, Percent, ShoppingBag, DollarSign, Eye, 
   BarChart3, TrendingUp, Filter, Search, ShieldAlert,
-  Coins, ArrowUpRight, Target, Flame, ChevronUp, ChevronDown,
-  Users
+  Coins, ArrowUpRight, Target, Flame, ChevronUp, ChevronDown, Users
 } from "lucide-react";
 
 const VLHKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
     <div className="flex justify-between items-start gap-2">
-      <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">
-        {title}
-      </span>
-      <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}>
-        <Icon size={16} />
-      </div>
+      <span className="text-sm font-black tracking-wider block text-slate-500 dark:text-slate-400">{title}</span>
+      <div className={`p-2.5 rounded-xl bg-opacity-10 ${colorClass} flex-shrink-0`}><Icon size={16} /></div>
     </div>
     <div className="mt-4 flex items-end flex-wrap gap-0.5 leading-none">
       {prefix && <span className="text-xs md:text-sm font-black mr-0.5 mb-0.5 text-slate-400 dark:text-slate-500">{prefix}</span>}
@@ -39,7 +34,7 @@ export default function VLHDashboardPage() {
   const [searchMedia, setSearchMedia] = useState<string>("");
   const [tokutanFilter, setTokutanFilter] = useState<string>("all");
   const [mediaSortKey, setMediaSortKey] = useState<string>("issued_count");
-  const [aspSortKey, setAspSortKey] = useState<string>("reward");
+  const [aspSortKey, setAspSortKey] = useState<string>("normalized_gross");
   const [aspSortAsc, setAspSortAsc] = useState<boolean>(false);
 
   useEffect(() => {
@@ -68,7 +63,7 @@ export default function VLHDashboardPage() {
       const imp = row.impressions || 0;
       const clk = row.clicks || 0;
       const cv = row.issued_count || 0;
-      const cost = row.issued_reward || 0;
+      const cost = row.normalized_gross || 0; // 👑 修正：API側で正規化されたグロス税込コストを利用！
       
       const revenue = cv * 79800;
       const ctr = imp > 0 ? parseFloat(((clk / imp) * 100).toFixed(2)) : 0.0;
@@ -122,7 +117,7 @@ export default function VLHDashboardPage() {
     const totalImp = filteredData.reduce((acc, row) => acc + (row.impressions || 0), 0);
     const totalClicks = filteredData.reduce((acc, row) => acc + (row.clicks || 0), 0);
     const totalIssued = filteredData.reduce((acc, row) => acc + (row.issued_count || 0), 0);
-    const totalCost = filteredData.reduce((acc, row) => acc + (row.issued_reward || 0), 0);
+    const totalCost = filteredData.reduce((acc, row) => acc + (row.normalized_gross || 0), 0); // 👑 修正
     const totalRevenue = totalIssued * 79800;
 
     return {
@@ -130,7 +125,7 @@ export default function VLHDashboardPage() {
       ctr: totalImp > 0 ? parseFloat(((totalClicks / totalImp) * 100).toFixed(2)) : 0.0,
       issued_count: totalIssued,
       vcr: totalClicks > 0 ? parseFloat(((totalIssued / totalClicks) * 100).toFixed(2)) : 0.0,
-      issued_reward: totalCost, revenue: totalRevenue,
+      normalized_gross: totalCost, revenue: totalRevenue,
       roas: totalCost > 0 ? parseFloat(((totalRevenue / totalCost) * 100).toFixed(2)) : 0.0,
       cpa: totalIssued > 0 ? Math.round(totalCost / totalIssued) : 0,
       cpc: totalClicks > 0 ? parseFloat((totalCost / totalClicks).toFixed(2)) : 0.0,
@@ -141,22 +136,22 @@ export default function VLHDashboardPage() {
   const aspPerformance = useMemo(() => {
     const asps: any = {};
     filteredData.forEach(row => {
-      if (!asps[row.asp]) asps[row.asp] = { impressions: 0, clicks: 0, issued: 0, reward: 0 };
+      if (!asps[row.asp]) asps[row.asp] = { impressions: 0, clicks: 0, issued: 0, normalized_gross: 0 };
       asps[row.asp].impressions += (row.impressions || 0);
       asps[row.asp].clicks += (row.clicks || 0);
       asps[row.asp].issued += (row.issued_count || 0);
-      asps[row.asp].reward += (row.issued_reward || 0);
+      asps[row.asp].normalized_gross += (row.normalized_gross || 0); // 👑 修正
     });
 
     return Object.keys(asps).map(name => {
       const rev = asps[name].issued * 79800;
-      const cost = asps[name].reward;
+      const cost = asps[name].normalized_gross;
       return {
         name, impressions: asps[name].impressions, clicks: asps[name].clicks,
         ctr: asps[name].impressions > 0 ? parseFloat(((asps[name].clicks / asps[name].impressions) * 100).toFixed(2)) : 0.0,
         issued: asps[name].issued,
         cvr: asps[name].clicks > 0 ? parseFloat(((asps[name].issued / asps[name].clicks) * 100).toFixed(2)) : 0.0,
-        reward: cost, revenue: rev,
+        normalized_gross: cost, revenue: rev,
         roas: cost > 0 ? parseFloat(((rev / cost) * 100).toFixed(2)) : 0.0,
         cpa: asps[name].issued > 0 ? Math.round(cost / asps[name].issued) : 0,
         cpc: asps[name].clicks > 0 ? parseFloat((cost / asps[name].clicks).toFixed(2)) : 0.0,
@@ -169,39 +164,30 @@ export default function VLHDashboardPage() {
     });
   }, [filteredData, aspSortKey, aspSortAsc]);
 
-  // 👑 大粛清・効率ランキングの「真のグループ化名寄せ集計ロジック」
   const sortedMedias = useMemo(() => {
     const mediaMap: Record<string, any> = {};
 
     filteredData.forEach(row => {
       if (!row.media_name) return;
-      // メディア名とASP名のコンビネーションで一意のキーを創世
       const key = `${row.media_name}_${row.asp}`;
       
       if (!mediaMap[key]) {
         mediaMap[key] = {
-          media_name: row.media_name,
-          asp: row.asp,
-          impressions: 0,
-          clicks: 0,
-          issued_count: 0,
-          issued_reward: 0,
-          revenue: 0
+          media_name: row.media_name, asp: row.asp, impressions: 0, clicks: 0,
+          issued_count: 0, normalized_gross: 0, revenue: 0
         };
       }
       
-      // 期間内の数値を漏れなく絶対加算（グループ合計化）
       mediaMap[key].impressions += (row.impressions || 0);
       mediaMap[key].clicks += (row.clicks || 0);
       mediaMap[key].issued_count += (row.issued_count || 0);
-      mediaMap[key].issued_reward += (row.issued_reward || 0);
+      mediaMap[key].normalized_gross += (row.normalized_gross || 0); // 👑 修正
       mediaMap[key].revenue += (row.revenue || 0);
     });
 
-    // 合計されたアセットをベースに、率系指標（ROAS、CPA）を正確に再精錬
     const aggregatedList = Object.values(mediaMap).map((media: any) => {
       const cv = media.issued_count;
-      const cost = media.issued_reward;
+      const cost = media.normalized_gross;
       const rev = media.revenue;
 
       return {
@@ -211,12 +197,8 @@ export default function VLHDashboardPage() {
       };
     });
 
-    // 指定のキーでソートを執行
     return aggregatedList.sort((a: any, b: any) => {
-      // 💡 改善：CPAボタンの時は「低い（効率が良い）」方を上位に並べる
-      if (mediaSortKey === "cpa") {
-        return (a.cpa || 0) - (b.cpa || 0);
-      }
+      if (mediaSortKey === "cpa") return (a.cpa || 0) - (b.cpa || 0);
       return (b[mediaSortKey] || 0) - (a[mediaSortKey] || 0);
     }).slice(0, 5);
   }, [filteredData, mediaSortKey]);
@@ -240,9 +222,7 @@ export default function VLHDashboardPage() {
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-5 transition-all">
         <div className="flex flex-wrap items-center gap-4 border-b pb-4 border-slate-100 dark:border-slate-800/60">
-          <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
-            <Filter size={14} /> 期間切替
-          </div>
+          <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]"><Filter size={14} /> 期間切替</div>
           <div className="flex flex-wrap gap-1.5">
             {[{l:"全期間", v:"all"}, {l:"前日", v:"yesterday"}, {l:"直近7日間", v:"7d"}, {l:"直近14日間", v:"14d"}, {l:"直近30日間", v:"30d"}, {l:"直近1年間", v:"1y"}, {l:"当月", v:"thisMonth"}, {l:"先月", v:"lastMonth"}, {l:"カスタム", v:"custom"}].map(range => (
               <button key={range.v} onClick={() => setFilterRange(range.v)} 
@@ -253,11 +233,9 @@ export default function VLHDashboardPage() {
           </div>
           {filterRange === "custom" && (
             <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
-              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
-                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
               <span className="text-slate-400 dark:text-slate-500 text-sm">~</span>
-              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
-                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
             </div>
           )}
         </div>
@@ -267,8 +245,7 @@ export default function VLHDashboardPage() {
             <span className="text-xs font-black tracking-wider text-slate-400 dark:text-slate-500">ASP選択:</span>
             <select value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)} 
               className="px-3 py-1.5 rounded-lg text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200">
-              <option value="all">すべてのASP</option>
-              <option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
+              <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
             </select>
           </div>
           <div className="flex items-center gap-2 flex-grow max-w-xs">
@@ -300,7 +277,7 @@ export default function VLHDashboardPage() {
           </div>
           <div className="border-l-4 border-emerald-500 pl-2 text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase pt-2">■ 広告運用・財務効率セクション</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <VLHKPICard title="報酬額" prefix="￥" value={Math.round(summary.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+            <VLHKPICard title="広告費(グロス税込)" prefix="￥" value={Math.round(summary.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
             <VLHKPICard title="売上" prefix="￥" value={Math.round(summary.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
             <VLHKPICard title="ROAS" value={summary.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
             <VLHKPICard title="CPM" prefix="￥" value={Math.round(summary.current_cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
@@ -319,7 +296,7 @@ export default function VLHDashboardPage() {
                     <th className="pb-3 text-left hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("name")}>ASP {renderSortIcon("name")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("impressions")}>インプレッション数 {renderSortIcon("impressions")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("clicks")}>クリック数 {renderSortIcon("clicks")}</th>
-                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("reward")}>報酬額 {renderSortIcon("reward")}</th>
+                    <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("normalized_gross")}>広告費(グロス税込) {renderSortIcon("normalized_gross")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("roas")}>ROAS {renderSortIcon("roas")}</th>
                     <th className="pb-3 text-right hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" onClick={() => handleAspSort("cpa")}>CPA {renderSortIcon("cpa")}</th>
                   </tr>
@@ -330,7 +307,7 @@ export default function VLHDashboardPage() {
                       <td className="py-4 font-black text-slate-900 dark:text-slate-50 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>{asp.name}</td>
                       <td className="py-4 text-right opacity-70 text-slate-500 dark:text-slate-400">{asp.impressions.toLocaleString()}回</td>
                       <td className="py-4 text-right text-slate-700 dark:text-slate-300">{asp.clicks.toLocaleString()}回</td>
-                      <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.reward).toLocaleString()}</td>
+                      <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.normalized_gross).toLocaleString()}</td>
                       <td className="py-4 text-right text-yellow-600 dark:text-yellow-400 font-black">{asp.roas}％</td>
                       <td className="py-4 text-right text-pink-500 dark:text-pink-400">￥{Math.round(asp.cpa).toLocaleString()}</td>
                     </tr>
@@ -343,7 +320,7 @@ export default function VLHDashboardPage() {
           <div className="border rounded-2xl p-6 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all">
             <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50"><Users size={14} className="text-amber-500" /> 効率ランキング</h3>
             <div className="grid grid-cols-4 gap-1 p-1 rounded-xl border text-[10px] font-black mb-4 border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800">
-              {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "issued_reward", l: "報酬額" }].map(b => (
+              {[{ k: "issued_count", l: "成果数" }, { k: "roas", l: "ROAS" }, { k: "cpa", l: "CPA" }, { k: "normalized_gross", l: "広告費" }].map(b => (
                 <button key={b.k} onClick={() => setMediaSortKey(b.k)} 
                   className={`py-1.5 rounded-lg text-center transition-all ${mediaSortKey === b.k ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"}`}>{b.l}</button>
               ))}

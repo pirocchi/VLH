@@ -105,18 +105,18 @@ export default function VLHTokutanPage() {
       }
 
       if (!map[finalName]) {
-        map[finalName] = { name: finalName, cv: 0, rawReward: 0, ids: new Set<string>(), aspUnitCosts: [], asps: {} };
+        map[finalName] = { name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, ids: new Set<string>(), aspUnitCosts: [], asps: {} };
       }
 
       map[finalName].ids.add(rawId);
       map[finalName].asps[asp] = true;
 
       const count = row.issued_count || 0;
-      const reward = row.issued_reward || 0;
-
+      
+      // 👑 修正：APIで付与された絶対ファクト（正規化グロス）から1件あたりの「統一グロス単価」を算出！
       if (count > 0) {
-        const unitCost = reward / count; 
-        map[finalName].aspUnitCosts.push({ asp, unitCost });
+        const unitGross = (row.normalized_gross || 0) / count; 
+        map[finalName].aspUnitCosts.push({ asp, unitGross });
       }
 
       if (row.date) {
@@ -127,43 +127,28 @@ export default function VLHTokutanPage() {
         
         if (d.getFullYear() === thisYear && d.getMonth() === thisMonth) {
           map[finalName].cv += count;
-          map[finalName].rawReward += reward;
+          map[finalName].normalized_gross += (row.normalized_gross || 0);
+          map[finalName].normalized_net += (row.normalized_net || 0);
         }
       }
     });
 
     return Object.values(map).map((p: any) => {
       const cv = p.cv;
-      
-      // 👑 規律：余計なでっち上げ計算を完全パージ。ケノン税込￥79,800に基づく、100%正確な総売上高ファクトのみを算出！
       const totalRevenue = cv * 79800;
 
-      let detectedLevel = 1; 
+      let detectedLevel = null; // 👑 修正：デフォルトLv.1へのフォールバックをパージ！
       let isSpecial = false;
 
       if (p.aspUnitCosts.length > 0) {
         const target = p.aspUnitCosts[p.aspUnitCosts.length - 1];
-        const cost = target.unitCost;
-        let targetGrossOrNet = 0;
+        const unitGross = target.unitGross;
 
         if (target.asp === "QUORIZa") {
           isSpecial = true;
-        } else if (target.asp === "A8.net") {
-          targetGrossOrNet = cost * 1.1;
-        } else if (target.asp === "もしもアフィリエイト") {
-          targetGrossOrNet = cost * 1.3 * 1.1;
         } else {
-          targetGrossOrNet = cost * 1.1;
-        }
-
-        if (!isSpecial) {
-          const found = TOKUTAN_MASTER_TABLE.find(t => {
-            if (target.asp === "A8.net") {
-              return Math.abs(t.net - targetGrossOrNet) <= 50;
-            } else {
-              return Math.abs(t.gross - targetGrossOrNet) <= 50;
-            }
-          });
+          // 👑 修正：API側でグロス税込に完全統一された単価を、テーブルのgrossと直接比較！(もしもの消費税ズレ許容で誤差60円までOK)
+          const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 60);
 
           if (found) {
             detectedLevel = found.level;
@@ -171,22 +156,17 @@ export default function VLHTokutanPage() {
             isSpecial = true; 
           }
         }
+      } else {
+        isSpecial = true;
       }
 
-      const currentTier = isSpecial 
-        ? { level: 99, name: "特殊（個別契約）", gross: 0, net: 0, minCV: 0, maxCV: 0 }
+      const currentTier = isSpecial || !detectedLevel
+        ? { level: 99, name: "特殊（個別契約） / 判定不能", gross: 0, net: 0, minCV: 0, maxCV: 0 }
         : TOKUTAN_MASTER_TABLE.find(t => t.level === detectedLevel) || TOKUTAN_MASTER_TABLE[0];
 
-      let partnerProfit = 0;
-      let aspProfit = 0;
-
-      if (isSpecial) {
-        partnerProfit = p.rawReward * 0.8; 
-        aspProfit = p.rawReward * 0.2;
-      } else {
-        partnerProfit = cv * currentTier.net;
-        aspProfit = cv * (currentTier.gross - currentTier.net);
-      }
+      // 👑 修正：APIが計算済みの「メディアの儲け（ネット）」と「ASPマージン（グロス-ネット）」をそのまま表示！
+      const partnerProfit = p.normalized_net;
+      const aspProfit = p.normalized_gross - p.normalized_net;
 
       const mainAsp = Object.keys(p.asps).join(" / ");
 
@@ -223,25 +203,17 @@ export default function VLHTokutanPage() {
 
   const handleGenerateAdvice = async () => {
     if (!currentPartner) return;
-    
     try {
       setAiLoading(true);
       setAiAdvice("");
-      
       const aiRes = await fetch("/api/ai/insight", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          partnerName: currentPartner.name,
-          cv: currentPartner.cv,
-          revenue: currentPartner.totalRevenue,
-          partnerProfit: currentPartner.partnerProfit,
-          aspProfit: currentPartner.aspProfit,
-          tierName: currentPartner.currentTier.name,
-          aspName: currentPartner.mainAsp
+          partnerName: currentPartner.name, cv: currentPartner.cv, revenue: currentPartner.totalRevenue,
+          partnerProfit: currentPartner.partnerProfit, aspProfit: currentPartner.aspProfit,
+          tierName: currentPartner.currentTier.name, aspName: currentPartner.mainAsp
         })
       });
-
       if (aiRes.ok) {
         const aiJson = await aiRes.json();
         setAiAdvice(aiJson.advice);
@@ -274,57 +246,32 @@ export default function VLHTokutanPage() {
             <div className="flex items-center gap-2">
               <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
               <select 
-                value={selectedAsp} 
-                onChange={(e) => setSelectedAsp(e.target.value)}
+                value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
               >
-                <option value="all">すべてのASP</option>
-                <option value="A8.net">A8.net</option>
-                <option value="afb">afb</option>
-                <option value="AccessTrade">AccessTrade</option>
-                <option value="felmat">felmat</option>
-                <option value="もしもアフィリエイト">もしもアフィリエイト</option>
-                <option value="QUORIZa">QUORIZa</option>
+                <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
               </select>
             </div>
-
             <div className="flex items-center gap-2">
               <Crown size={12} className="text-indigo-500 flex-shrink-0" />
               <select 
-                value={selectedLevel} 
-                onChange={(e) => setSelectedLevel(e.target.value)}
+                value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
               >
                 <option value="all">すべての設定レベル</option>
-                {TOKUTAN_MASTER_TABLE.map(t => (
-                  <option key={t.level} value={t.level.toString()}>レベル {t.level}</option>
-                ))}
+                {TOKUTAN_MASTER_TABLE.map(t => (<option key={t.level} value={t.level.toString()}>レベル {t.level}</option>))}
                 <option value="special">特殊（個別契約）</option>
               </select>
             </div>
           </div>
           
-          <input 
-            type="text"
-            placeholder="メディア名・IDで抽出..."
-            value={searchWord}
-            onChange={(e) => setSearchWord(e.target.value)}
-            className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold"
-          />
+          <input type="text" placeholder="メディア名・IDで抽出..." value={searchWord} onChange={(e) => setSearchWord(e.target.value)} className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold" />
 
           <div className="border-t border-slate-100 dark:border-slate-800/60 pt-3 h-80 xl:h-[480px] overflow-y-auto space-y-1.5 pr-1">
             {filteredPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
-                <div 
-                  key={idx}
-                  onClick={() => setSelectedPartnerName(partner.name)}
-                  className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border ${
-                    isSelected 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" 
-                      : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"
-                  }`}
-                >
+                <div key={idx} onClick={() => setSelectedPartnerName(partner.name)} className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border ${isSelected ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"}`}>
                   <div className="flex justify-between items-center gap-2">
                     <p className="text-xs md:text-sm truncate font-black flex-1">{partner.name}</p>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-black flex-shrink-0 transition-all ${getLevelBadgeClass(partner.currentTier.level, partner.isSpecial)}`}>
@@ -338,9 +285,7 @@ export default function VLHTokutanPage() {
                 </div>
               );
             })}
-            {filteredPartners.length === 0 && (
-              <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs font-bold">該当パートナー不在</div>
-            )}
+            {filteredPartners.length === 0 && <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs font-bold">該当パートナー不在</div>}
           </div>
         </div>
 
@@ -372,28 +317,18 @@ export default function VLHTokutanPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-2 text-xs font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
-                        <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI：Gemini直結）
+                        <MessageSquare size={14} /> 運用担当者への示唆・アドバイス（AI直結）
                       </div>
-                      
-                      <button
-                        onClick={handleGenerateAdvice}
-                        disabled={aiLoading || !currentPartner}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 text-white disabled:text-slate-400 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 flex-shrink-0 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:disabled:bg-slate-950 dark:disabled:text-slate-700 border border-transparent dark:disabled:border-slate-800"
-                      >
-                        <BrainCircuit size={13} className={aiLoading ? "animate-spin" : ""} />
-                        {aiLoading ? "分析中..." : "AI分析を実行"}
+                      <button onClick={handleGenerateAdvice} disabled={aiLoading || !currentPartner} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 text-white disabled:text-slate-400 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 flex-shrink-0 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:disabled:bg-slate-950 dark:disabled:text-slate-700 border border-transparent dark:disabled:border-slate-800">
+                        <BrainCircuit size={13} className={aiLoading ? "animate-spin" : ""} /> {aiLoading ? "分析中..." : "AI分析を実行"}
                       </button>
                     </div>
 
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
                       {aiLoading ? (
-                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">
-                          <Flame size={14} className="animate-spin" /> ⚡ Geminiがデータを分析中...
-                        </p>
+                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2"><Flame size={14} className="animate-spin" /> ⚡ Geminiがデータを分析中...</p>
                       ) : (
-                        <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">
-                          {aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在の戦況データをベースにした掲載交渉アイデアをGeminiが生成します。 」"}
-                        </p>
+                        <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">{aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在の戦況データをベースにした掲載交渉アイデアをGeminiが生成します。 」"}</p>
                       )}
                     </div>
                   </div>
@@ -406,7 +341,6 @@ export default function VLHTokutanPage() {
                   <TokutanKPICard title="当月合算成果数" value={currentPartner.cv.toLocaleString()} suffix="件" icon={Crown} colorClass="text-indigo-500 bg-indigo-500" />
                   <TokutanKPICard title="アフィリエイター利益" prefix="￥" value={Math.round(currentPartner.partnerProfit).toLocaleString()} icon={Target} colorClass="text-green-500 bg-green-500" />
                   <TokutanKPICard title="ASPマージン" prefix="￥" value={Math.round(currentPartner.aspProfit).toLocaleString()} icon={Percent} colorClass="text-orange-400 bg-orange-400" />
-                  {/* 👑 完全大粛清：妄想変数（実質利益）を跡形もなく消滅させ、純度100%の正しい『売上』のみを表示！！！ */}
                   <TokutanKPICard title="売上" prefix="￥" value={Math.round(currentPartner.totalRevenue).toLocaleString()} icon={DollarSign} colorClass="text-emerald-500 bg-emerald-500" />
                 </div>
               </div>
@@ -434,9 +368,7 @@ export default function VLHTokutanPage() {
                         return (
                           <tr key={tier.level} className={`transition-colors ${isMatch ? "bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20" : "hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10"}`}>
                             <td className="py-4 text-center">
-                              <span className={`px-2 py-0.5 rounded font-black transition-all ${getLevelBadgeClass(tier.level, false)}`}>
-                                Lv.{tier.level}
-                              </span>
+                              <span className={`px-2 py-0.5 rounded font-black transition-all ${getLevelBadgeClass(tier.level, false)}`}>Lv.{tier.level}</span>
                             </td>
                             <td className={`py-4 text-left ${isMatch ? "text-amber-600 dark:text-amber-400 font-black" : "text-slate-900 dark:text-slate-50"}`}>{tier.name}</td>
                             <td className="py-4 text-center opacity-70 text-slate-500 dark:text-slate-400">{tier.minCV} 〜 {tier.maxCV === 9999 ? "無制限" : `${tier.maxCV} 件`}</td>
@@ -444,11 +376,7 @@ export default function VLHTokutanPage() {
                             <td className="py-4 text-right text-green-500 dark:text-green-400">￥{tier.net.toLocaleString()}</td>
                             <td className="py-4 text-right text-orange-500 dark:text-orange-400">￥{(tier.gross - tier.net).toLocaleString()}</td>
                             <td className="py-4 text-center">
-                              {isMatch ? (
-                                <span className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-emerald-400 font-black animate-pulse">
-                                  <ArrowRight size={12}/> 適合中
-                                </span>
-                              ) : "-"}
+                              {isMatch ? (<span className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-emerald-400 font-black animate-pulse"><ArrowRight size={12}/> 適合中</span>) : "-"}
                             </td>
                           </tr>
                         );

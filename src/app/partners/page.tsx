@@ -30,7 +30,6 @@ export default function VLHPartnersPage() {
   const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
   
-  // 💡 期間フィルター用ステートの大装填
   const [filterRange, setFilterRange] = useState<string>("all"); 
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
 
@@ -59,7 +58,6 @@ export default function VLHPartnersPage() {
     initializeData();
   }, []);
 
-  // 💡 核心：生データを指定期間で冷徹に選別するタイムフィルター・パイプライン
   const baseFilteredData = useMemo(() => {
     const now = new Date();
     const getStartOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -102,10 +100,10 @@ export default function VLHPartnersPage() {
   const partnersAggregated = useMemo(() => {
     const map: any = {};
 
-    // 💡 改善：全期間データではなく、期間抽出済みの baseFilteredData をソースに名寄せ集計
     baseFilteredData.forEach(row => {
       const rawName = row.media_name || "不明なパートナー";
       const rawId = row.media_id || "N/A";
+      const asp = row.asp || "不明";
       if (!rawName || rawName === "日別レポート") return; 
 
       let finalName = rawName;
@@ -121,33 +119,32 @@ export default function VLHPartnersPage() {
         map[finalName] = {
           name: finalName,
           ids: new Set<string>(),
-          impressions: 0,
-          clicks: 0,
-          issued_count: 0,
-          issued_reward: 0,
-          asps: {}
+          impressions: 0, clicks: 0, issued_count: 0,
+          normalized_gross: 0, normalized_net: 0, asps: {}
         };
       }
 
+      // 👑 修正：API側で付与された絶対ファクト（正規化値）をそのまま合算！
       map[finalName].ids.add(rawId);
       map[finalName].impressions += (row.impressions || 0);
       map[finalName].clicks += (row.clicks || 0);
       map[finalName].issued_count += (row.issued_count || 0);
-      map[finalName].issued_reward += (row.issued_reward || 0);
+      map[finalName].normalized_gross += (row.normalized_gross || 0);
+      map[finalName].normalized_net += (row.normalized_net || 0);
 
-      const asp = row.asp;
       if (!map[finalName].asps[asp]) {
-        map[finalName].asps[asp] = { impressions: 0, clicks: 0, issued_count: 0, issued_reward: 0 };
+        map[finalName].asps[asp] = { impressions: 0, clicks: 0, issued_count: 0, normalized_gross: 0, normalized_net: 0 };
       }
       map[finalName].asps[asp].impressions += (row.impressions || 0);
       map[finalName].asps[asp].clicks += (row.clicks || 0);
       map[finalName].asps[asp].issued_count += (row.issued_count || 0);
-      map[finalName].asps[asp].issued_reward += (row.issued_reward || 0);
+      map[finalName].asps[asp].normalized_gross += (row.normalized_gross || 0);
+      map[finalName].asps[asp].normalized_net += (row.normalized_net || 0);
     });
 
     return Object.values(map).map((p: any) => {
       const rev = p.issued_count * 79800; 
-      const cost = p.issued_reward;
+      const cost = p.normalized_gross; 
       return {
         ...p,
         idList: Array.from(p.ids).join(", "),
@@ -182,17 +179,15 @@ export default function VLHPartnersPage() {
     return Object.keys(currentPartner.asps).map(aspName => {
       const src = currentPartner.asps[aspName];
       const rev = src.issued_count * 79800;
-      const cost = src.issued_reward;
+      const cost = src.normalized_gross;
       return {
         name: aspName,
-        impressions: src.impressions,
-        clicks: src.clicks,
+        impressions: src.impressions, clicks: src.clicks,
         ctr: src.impressions > 0 ? parseFloat(((src.clicks / src.impressions) * 100).toFixed(2)) : 0.0,
         issued_count: src.issued_count,
         cvr: src.clicks > 0 ? parseFloat(((src.issued_count / src.clicks) * 100).toFixed(2)) : 0.0,
-        reward: cost,
-        revenue: rev,
-        roas: cost > 0 ? parseFloat(((rev / cost) * 100).toFixed(2)) : 0.0,
+        normalized_gross: cost, normalized_net: src.normalized_net,
+        revenue: rev, roas: cost > 0 ? parseFloat(((rev / cost) * 100).toFixed(2)) : 0.0,
         cpa: src.issued_count > 0 ? Math.round(cost / src.issued_count) : 0,
         cpc: src.clicks > 0 ? parseFloat((cost / src.clicks).toFixed(2)) : 0.0,
         cpm: src.impressions > 0 ? parseFloat(((cost / src.impressions) * 1000).toFixed(2)) : 0.0
@@ -208,7 +203,6 @@ export default function VLHPartnersPage() {
         <h1 className="text-xl font-black tracking-tight">パートナー詳細分析</h1>
       </header>
 
-      {/* 📡 期間フィルターコントロールパネルのインジェクション */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2 text-indigo-500 font-black text-xs uppercase tracking-widest min-w-[80px]">
@@ -224,11 +218,9 @@ export default function VLHPartnersPage() {
           </div>
           {filterRange === "custom" && (
             <div className="flex items-center gap-2 ml-auto animate-in fade-in duration-200">
-              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} 
-                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <input type="date" value={customRange.start} onChange={(e)=>setCustomRange({...customRange, start: e.target.value})} className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
               <span className="text-slate-400 dark:text-slate-500 text-sm">~</span>
-              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} 
-                className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
+              <input type="date" value={customRange.end} onChange={(e)=>setCustomRange({...customRange, end: e.target.value})} className="px-3 py-1 rounded-lg bg-transparent border text-xs font-bold focus:outline-none focus:border-indigo-500 border-slate-300 text-slate-800 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-950" />
             </div>
           )}
         </div>
@@ -244,41 +236,20 @@ export default function VLHPartnersPage() {
           <div className="flex items-center gap-2">
             <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
             <select 
-              value={selectedAsp} 
-              onChange={(e) => setSelectedAsp(e.target.value)}
+              value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)}
               className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
             >
-              <option value="all">すべてのASP</option>
-              <option value="A8.net">A8.net</option>
-              <option value="afb">afb</option>
-              <option value="AccessTrade">AccessTrade</option>
-              <option value="felmat">felmat</option>
-              <option value="もしもアフィリエイト">もしもアフィリエイト</option>
-              <option value="QUORIZa">QUORIZa</option>
+              <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
             </select>
           </div>
           
-          <input 
-            type="text"
-            placeholder="メディア名・IDを入力..."
-            value={searchWord}
-            onChange={(e) => setSearchWord(e.target.value)}
-            className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold"
-          />
+          <input type="text" placeholder="メディア名・IDを入力..." value={searchWord} onChange={(e) => setSearchWord(e.target.value)} className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold" />
 
           <div className="border-t border-slate-100 dark:border-slate-800/60 pt-3 h-80 xl:h-[500px] overflow-y-auto space-y-1.5 pr-1">
             {searchedPartners.map((partner, idx) => {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
-                <div 
-                  key={idx}
-                  onClick={() => setSelectedPartnerName(partner.name)}
-                  className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border ${
-                    isSelected 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" 
-                      : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"
-                  }`}
-                >
+                <div key={idx} onClick={() => setSelectedPartnerName(partner.name)} className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border ${isSelected ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"}`}>
                   <p className="text-xs md:text-sm truncate font-black">{partner.name}</p>
                   <div className="flex justify-between items-center text-[10px] font-bold opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">ID: {partner.idList}</span>
@@ -287,9 +258,7 @@ export default function VLHPartnersPage() {
                 </div>
               );
             })}
-            {searchedPartners.length === 0 && (
-              <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs font-bold">該当パートナー不在</div>
-            )}
+            {searchedPartners.length === 0 && <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs font-bold">該当パートナー不在</div>}
           </div>
         </div>
 
@@ -320,7 +289,7 @@ export default function VLHPartnersPage() {
 
                 <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ パートナー単体・広告運用財務効率</div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <PartnerKPICard title="報酬額" prefix="￥" value={Math.round(currentPartner.issued_reward).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+                  <PartnerKPICard title="広告費(グロス税込)" prefix="￥" value={Math.round(currentPartner.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
                   <PartnerKPICard title="売上" prefix="￥" value={Math.round(currentPartner.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
                   <PartnerKPICard title="ROAS" value={currentPartner.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
                   <PartnerKPICard title="CPM" prefix="￥" value={Math.round(currentPartner.cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
@@ -330,9 +299,7 @@ export default function VLHPartnersPage() {
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
-                <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
-                  <Layers size={14} className="text-indigo-500" /> ASP別内訳レポート
-                </h3>
+                <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50"><Layers size={14} className="text-indigo-500" /> ASP別内訳レポート</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                     <thead>
@@ -343,7 +310,7 @@ export default function VLHPartnersPage() {
                         <th className="pb-3 text-right">クリック率</th>
                         <th className="pb-3 text-right">コンバージョン数</th>
                         <th className="pb-3 text-right">コンバージョン率</th>
-                        <th className="pb-3 text-right">報酬額</th>
+                        <th className="pb-3 text-right">広告費(グロス税込)</th>
                         <th className="pb-3 text-right">売上</th>
                         <th className="pb-3 text-right">ROAS</th>
                         <th className="pb-3 text-right">CPA</th>
@@ -358,7 +325,7 @@ export default function VLHPartnersPage() {
                           <td className="py-4 text-right text-purple-500 dark:text-purple-400">{asp.ctr}％</td>
                           <td className="py-4 text-right text-green-500 dark:text-green-400">{asp.issued_count}件</td>
                           <td className="py-4 text-right text-teal-500 dark:text-teal-400">{asp.cvr}％</td>
-                          <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.reward).toLocaleString()}</td>
+                          <td className="py-4 text-right text-red-500 dark:text-red-400">￥{Math.round(asp.normalized_gross).toLocaleString()}</td>
                           <td className="py-4 text-right text-emerald-500 dark:text-emerald-400">￥{Math.round(asp.revenue).toLocaleString()}</td>
                           <td className="py-4 text-right text-yellow-600 dark:text-yellow-400 font-black">{asp.roas}％</td>
                           <td className="py-4 text-right text-pink-500 dark:text-pink-400">￥{Math.round(asp.cpa).toLocaleString()}</td>
