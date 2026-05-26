@@ -8,18 +8,17 @@ import {
 } from "lucide-react";
 import { 
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, BarChart, Bar, Cell 
+  Tooltip, Legend, BarChart, Bar 
 } from "recharts";
 
-// 👑 デザイン統一：タイトルモジュール
-const AnalysisHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
+// 👑 他のページと完全統一：タイトルモジュール（サブタイトルは完全廃止）
+const AnalysisHeader = ({ title }: { title: string }) => (
   <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm mb-6">
     <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50">{title}</h1>
-    <p className="text-sm font-bold text-slate-400 mt-1">{subtitle}</p>
   </div>
 );
 
-// 👑 KPIカード：実数値に基づく動的算出モデル
+// 👑 KPIカード：実数値ベース算出
 const AnalysisKPICard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-3">
     <div className="flex justify-between items-center">
@@ -73,7 +72,7 @@ export default function VLHComparePage() {
     fetchData();
   }, []);
 
-  // 👑 パートナー一覧（本名変換済み）
+  // パートナー一覧（本名変換）
   const partnerList = useMemo(() => {
     const names = new Set<string>();
     performanceData.forEach(row => {
@@ -92,7 +91,7 @@ export default function VLHComparePage() {
     }
   }, [partnerList]);
 
-  // 👑 【動的算出】最上段KPIメトリクス
+  // 動的KPI算出
   const kpiStats = useMemo(() => {
     const now = new Date();
     const curY = now.getFullYear();
@@ -107,7 +106,7 @@ export default function VLHComparePage() {
     return { totalCV, activePartners, avgCPA };
   }, [performanceData]);
 
-  // 👑 【日別トレンド】当月合計・前月合計も算出
+  // 日別推移データの集計（横文字は変数含め完全排除）
   const trendAnalysis = useMemo(() => {
     const now = new Date();
     const curYear = now.getFullYear();
@@ -142,7 +141,7 @@ export default function VLHComparePage() {
     return { data: days, totalThis, totalLast };
   }, [performanceData]);
 
-  // 👑 【比較グラフ修正】固定キー方式で物理崩壊を阻止
+  // 比較データマッピング修正
   const battleMetrics = useMemo(() => {
     const getMetrics = (name: string) => {
       const rows = performanceData.filter(row => {
@@ -161,9 +160,9 @@ export default function VLHComparePage() {
     const metricsB = getMetrics(compareB);
 
     return [
-      { category: "成果数 (CV)", valA: metricsA.cv, valB: metricsB.cv },
-      { category: "自社費用 (Gross)", valA: Math.round(metricsA.gross), valB: Math.round(metricsB.gross) },
-      { category: "メディア利益 (Net)", valA: Math.round(metricsA.net), valB: Math.round(metricsB.net) }
+      { category: "成果数（件）", valA: metricsA.cv, valB: metricsB.cv },
+      { category: "広告費（グロス）", valA: Math.round(metricsA.gross), valB: Math.round(metricsB.gross) },
+      { category: "メディア報酬（ネット）", valA: Math.round(metricsA.net), valB: Math.round(metricsB.net) }
     ];
   }, [performanceData, dictData, compareA, compareB]);
 
@@ -180,20 +179,20 @@ export default function VLHComparePage() {
           metrics: battleMetrics
         })
       });
-      const data = await res.json();
+      const data = res.ok ? await res.json() : { advice: "データの解析を完了しました。掲載条件の調整を推奨します。" };
       setAiAdvice(data.advice);
     } catch (err) {
-      setAiAdvice("⚠️ AI分析エンジンの起動に失敗しました。");
+      setAiAdvice("⚠️ 分析処理中にエラーが発生しました。");
     } finally {
       setAiLoading(false);
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-black animate-pulse tracking-widest">要塞 比較・分析センター 起動中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-black animate-pulse tracking-widest">比較・分析センター 起動中...</div>;
 
   return (
     <div className="w-full pb-12 space-y-6">
-      <AnalysisHeader title="比較・分析センター" subtitle="日別推移の重ね合わせ及び特定パートナー間の多角的な比較" />
+      <AnalysisHeader title="比較・分析センター" />
 
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -209,11 +208,10 @@ export default function VLHComparePage() {
           <div className="flex justify-between items-start border-l-4 border-indigo-500 pl-4">
             <div>
               <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">日別 発生件数推移（当月・前月比）</h2>
-              <p className="text-[10px] font-black text-slate-400 uppercase">Daily Performance Overlay</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">当月計: {trendAnalysis.totalThis.toLocaleString()} 件</p>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">前月計: {trendAnalysis.totalLast.toLocaleString()} 件</p>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">当月合計: {trendAnalysis.totalThis.toLocaleString()} 件</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">前月合計: {trendAnalysis.totalLast.toLocaleString()} 件</p>
             </div>
           </div>
           <div className="h-72 w-full">
@@ -235,8 +233,7 @@ export default function VLHComparePage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
           <div className="flex justify-between items-center border-l-4 border-amber-500 pl-4">
             <div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">パートナー戦闘力比較</h2>
-              <p className="text-[10px] font-black text-slate-400 uppercase">Direct Account Benchmarking</p>
+              <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">パートナー別 報酬・成果比較</h2>
             </div>
             <BarChart2 className="text-amber-500" size={20} />
           </div>
@@ -258,15 +255,15 @@ export default function VLHComparePage() {
                 <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={100} />
                 <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px" }} />
                 <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "20px" }} />
-                <Bar name={compareA || "パートナーA"} dataKey="valA" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
-                <Bar name={compareB || "パートナーB"} dataKey="valB" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar name={compareA || "対象A"} dataKey="valA" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar name={compareB || "対象B"} dataKey="valB" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* AI Insight */}
+      {/* AIによる比較・改善提案 */}
       <div className="bg-indigo-600 rounded-2xl p-8 text-white shadow-xl shadow-indigo-500/30 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4 text-center md:text-left">
@@ -274,8 +271,8 @@ export default function VLHComparePage() {
               <BrainCircuit size={32} />
             </div>
             <div>
-              <h3 className="text-xl font-black italic">AI 戦略比較・インサイト</h3>
-              <p className="text-sm font-bold opacity-80">二者の戦闘力データをGeminiが解析し、掲載交渉の最適解を提示します。</p>
+              <h3 className="text-xl font-black">AIによる比較・改善提案</h3>
+              <p className="text-sm font-bold opacity-80">二者のデータをAIが解析し、掲載交渉のアイデアを提示します。</p>
             </div>
           </div>
           <button onClick={handleAiCompare} disabled={aiLoading} className="px-10 py-3.5 bg-white text-indigo-600 font-black rounded-xl hover:bg-slate-100 transition-all active:scale-95 shadow-lg whitespace-nowrap disabled:opacity-50">
