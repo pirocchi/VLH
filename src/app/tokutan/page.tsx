@@ -113,7 +113,6 @@ export default function VLHTokutanPage() {
 
       const count = row.issued_count || 0;
       
-      // 👑 修正：APIで付与された絶対ファクト（正規化グロス）から1件あたりの「統一グロス単価」を算出！
       if (count > 0) {
         const unitGross = (row.normalized_gross || 0) / count; 
         map[finalName].aspUnitCosts.push({ asp, unitGross });
@@ -137,9 +136,10 @@ export default function VLHTokutanPage() {
       const cv = p.cv;
       const totalRevenue = cv * 79800;
 
-      let detectedLevel = null; // 👑 修正：デフォルトLv.1へのフォールバックをパージ！
+      let detectedLevel = null;
       let isSpecial = false;
 
+      // 👑 修正：0件（単価履歴なし）の場合は、強制的に Lv.1（通常）とする！
       if (p.aspUnitCosts.length > 0) {
         const target = p.aspUnitCosts[p.aspUnitCosts.length - 1];
         const unitGross = target.unitGross;
@@ -147,7 +147,6 @@ export default function VLHTokutanPage() {
         if (target.asp === "QUORIZa") {
           isSpecial = true;
         } else {
-          // 👑 修正：API側でグロス税込に完全統一された単価を、テーブルのgrossと直接比較！(もしもの消費税ズレ許容で誤差60円までOK)
           const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 60);
 
           if (found) {
@@ -157,14 +156,13 @@ export default function VLHTokutanPage() {
           }
         }
       } else {
-        isSpecial = true;
+        detectedLevel = 1; // 👑 修正：ここが "isSpecial = true" になっていたのをLv1に変更！
       }
 
       const currentTier = isSpecial || !detectedLevel
         ? { level: 99, name: "特殊（個別契約） / 判定不能", gross: 0, net: 0, minCV: 0, maxCV: 0 }
         : TOKUTAN_MASTER_TABLE.find(t => t.level === detectedLevel) || TOKUTAN_MASTER_TABLE[0];
 
-      // 👑 修正：APIが計算済みの「メディアの儲け（ネット）」と「ASPマージン（グロス-ネット）」をそのまま表示！
       const partnerProfit = p.normalized_net;
       const aspProfit = p.normalized_gross - p.normalized_net;
 
