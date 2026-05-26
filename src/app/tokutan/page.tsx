@@ -105,18 +105,24 @@ export default function VLHTokutanPage() {
       }
 
       if (!map[finalName]) {
-        map[finalName] = { name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, ids: new Set<string>(), aspUnitCosts: [], asps: {} };
+        map[finalName] = { name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", hasValidUnit: false };
       }
 
       map[finalName].ids.add(rawId);
       map[finalName].asps[asp] = true;
 
       const count = row.issued_count || 0;
-      
-      // 👑 【絶対修正】JavaScriptの正しいコメント「//」へ大修復！！！
-      // ブリュンヒルドが確定出力した1件あたりの生単価（unit_gross）を、成果0件だろうが100%そのまま配列に装填！
       const staticUnitGross = row.unit_gross || 16500;
-      map[finalName].aspUnitCosts.push({ asp, unitGross: staticUnitGross });
+
+      // 👑 【絶対防壁】成果が発生している行（count > 0）の単価を最優先でロック！
+      // 成果0件の日のデフォルト値（16,500円）による上書き汚染を完全に遮断します！！！
+      if (count > 0 || !map[finalName].hasValidUnit) {
+        map[finalName].detectedUnitGross = staticUnitGross;
+        map[finalName].detectedAsp = asp;
+        if (count > 0) {
+          map[finalName].hasValidUnit = true;
+        }
+      }
 
       if (row.date) {
         const dateStr = String(row.date);
@@ -139,13 +145,13 @@ export default function VLHTokutanPage() {
       let detectedLevel = null;
       let isSpecial = false;
 
-      if (p.aspUnitCosts.length > 0) {
-        const target = p.aspUnitCosts[p.aspUnitCosts.length - 1];
-        const unitGross = target.unitGross;
+      if (p.detectedUnitGross > 0) {
+        const unitGross = p.detectedUnitGross;
 
-        if (target.asp === "QUORIZa") {
+        if (p.detectedAsp === "QUORIZa") {
           isSpecial = true;
         } else {
+          // 👑 汚染が除去された純粋な確定単価でMスタテーブルと厳密照合！
           const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 10);
 
           if (found) {
@@ -215,10 +221,10 @@ export default function VLHTokutanPage() {
         const aiJson = await aiRes.json();
         setAiAdvice(aiJson.advice);
       } else {
-        setAiAdvice("⚠️ Geminiの呼び出しに失敗しました。APIキーまたはネットワーク設定を確認してください。");
+        setAiAdvice("⚠️ 分析エンジンの呼び出しに失敗しました。");
       }
     } catch (err) {
-      setAiAdvice("⚠️ Geminiへの通信が一時的に遮断されました。");
+      setAiAdvice("⚠️ 通信が一時的に遮断されました。");
     } finally {
       setAiLoading(false);
     }
@@ -323,15 +329,16 @@ export default function VLHTokutanPage() {
 
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
                       {aiLoading ? (
-                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2"><Flame size={14} className="animate-spin" /> ⚡ Geminiがデータを分析中...</p>
+                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">⚡ データを分析中...</p>
                       ) : (
-                        <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">{aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在の戦況データをベースにした掲載交渉アイデアをGeminiが生成します。 」"}</p>
+                        <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">{aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在のデータに基づく掲載交渉アイデアを生成します。 」"}</p>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* 当月成果・報酬内訳 */}
               <div className="space-y-2">
                 <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・報酬内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -342,6 +349,7 @@ export default function VLHTokutanPage() {
                 </div>
               </div>
 
+              {/* ケノン特別単価基準表 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
                   <Filter size={14} className="text-indigo-500" /> ケノン特別単価基準表

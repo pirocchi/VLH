@@ -11,21 +11,20 @@ import {
   Tooltip, Legend, BarChart, Bar 
 } from "recharts";
 
-// 👑 他のページと完全同一仕様：タイトルモジュール
+// 👑 デザイン統一：タイトルモジュール
 const AnalysisHeader = ({ title }: { title: string }) => (
   <div className="px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm mb-6 flex justify-between items-center">
     <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-50">{title}</h1>
   </div>
 );
 
-// 👑 KPIカード：上昇・下降率の文字サイズを大幅拡大
+// 👑 KPIカード：文字サイズを拡大したクリーンモデル
 const AnalysisKPICard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-3">
     <div className="flex justify-between items-center">
       <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
         <Icon size={20} />
       </div>
-      {/* 👑 文字サイズを text-xs から text-sm md:text-base へ拡大！ */}
       <div className={`flex items-center gap-1 text-sm md:text-base font-black ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
         {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
         {change}%
@@ -46,7 +45,6 @@ export default function VLHComparePage() {
   const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
   
-  // 👑 検索・絞り込み用フィルター状態
   const [filterAsp, setFilterAsp] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("all");
   const [filterKeyword, setFilterKeyword] = useState<string>("");
@@ -78,7 +76,7 @@ export default function VLHComparePage() {
     fetchData();
   }, []);
 
-  // パートナー評価データの集計と単価プロパティ（グロス・ネット）の同時格納
+  // パートナー評価データの集計（👑 成果発生日の単価を絶対ホールドする防壁を実装！）
   const partnersWithEvaluations = useMemo(() => {
     const map: any = {};
     const now = new Date();
@@ -98,7 +96,7 @@ export default function VLHComparePage() {
       if (match) finalName = match.real_name;
 
       if (!map[finalName]) {
-        map[finalName] = { name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, ids: new Set<string>(), aspUnitCosts: [], asps: {} };
+        map[finalName] = { name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, ids: new Set<string>(), asps: {}, displayGross: 16500, displayNet: 13200, hasValidUnit: false };
       }
 
       map[finalName].ids.add(rawId);
@@ -107,7 +105,15 @@ export default function VLHComparePage() {
       const count = row.issued_count || 0;
       const staticUnitGross = row.unit_gross || 16500;
       const staticUnitNet = row.unit_net || 13200;
-      map[finalName].aspUnitCosts.push({ asp, unitGross: staticUnitGross, unitNet: staticUnitNet });
+
+      // 👑 【絶対修正】成果がある日の単価を最優先ロック！0件の日のデフォルト16500による汚染を完全パージ！
+      if (count > 0 || !map[finalName].hasValidUnit) {
+        map[finalName].displayGross = staticUnitGross;
+        map[finalName].displayNet = staticUnitNet;
+        if (count > 0) {
+          map[finalName].hasValidUnit = true;
+        }
+      }
 
       if (row.date) {
         const [y, m] = row.date.split("-").map(Number);
@@ -123,7 +129,6 @@ export default function VLHComparePage() {
       const cv = p.cv;
       const totalRevenue = cv * 79800;
       const mainAsp = Object.keys(p.asps).join(" / ");
-      const lastUnit = p.aspUnitCosts[p.aspUnitCosts.length - 1] || { unitGross: 16500, unitNet: 13200 };
 
       return { 
         ...p, 
@@ -131,14 +136,12 @@ export default function VLHComparePage() {
         idList: Array.from(p.ids).join(", "), 
         totalRevenue, 
         partnerProfit: p.normalized_net, 
-        aspProfit: p.normalized_gross - p.normalized_net,
-        displayGross: lastUnit.unitGross,
-        displayNet: lastUnit.unitNet
+        aspProfit: p.normalized_gross - p.normalized_net
       };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
-  // 👑 クロスフィルター連動型の選択候補リスト
+  // 絞り込み用候補リスト
   const filteredCompareList = useMemo(() => {
     return partnersWithEvaluations.filter(p => {
       const matchesAsp = filterAsp === "all" || Object.keys(p.asps || {}).includes(filterAsp);
@@ -148,7 +151,6 @@ export default function VLHComparePage() {
     });
   }, [partnersWithEvaluations, filterAsp, filterActive, filterKeyword]);
 
-  // フィルター変更時にプルダウンの選択位置を自動安全補正
   useEffect(() => {
     if (filteredCompareList.length > 0) {
       if (!filteredCompareList.some(p => p.name === compareA)) setCompareA(filteredCompareList[0]?.name || "");
@@ -156,7 +158,6 @@ export default function VLHComparePage() {
     }
   }, [filteredCompareList]);
 
-  // 選択された2社の詳細オブジェクト
   const partnerADetails = useMemo(() => partnersWithEvaluations.find(p => p.name === compareA), [partnersWithEvaluations, compareA]);
   const partnerBDetails = useMemo(() => partnersWithEvaluations.find(p => p.name === compareB), [partnersWithEvaluations, compareB]);
 
@@ -210,7 +211,6 @@ export default function VLHComparePage() {
     return { data: days, totalThis, totalLast };
   }, [performanceData]);
 
-  // 👑 【バグ完全修復】件数と金額のグラフデータを分離！
   const metricsA = useMemo(() => {
     if (!partnerADetails) return { cv: 0, gross: 0, net: 0 };
     return { cv: partnerADetails.cv, gross: partnerADetails.normalized_gross, net: partnerADetails.partnerProfit };
@@ -301,7 +301,7 @@ export default function VLHComparePage() {
             <BarChart2 className="text-amber-500" size={20} />
           </div>
 
-          {/* 👑 追加機能：プルダウン地獄を消滅させる3連検索フィルター */}
+          {/* 3連検索フィルター */}
           <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-[10px] font-black text-slate-400 block mb-1">ASP絞り込み</label>
@@ -333,7 +333,7 @@ export default function VLHComparePage() {
             </select>
           </div>
 
-          {/* 👑 追加機能：特別単価・所属ASPの常時明記カード */}
+          {/* 特別単価・所属ASPの常時明記カード */}
           <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
             <div className="space-y-1 border-r border-slate-200 dark:border-slate-800/60 pr-2">
               <p className="font-black text-indigo-500 truncate">【対象A】 {compareA || "未選択"}</p>
@@ -347,7 +347,7 @@ export default function VLHComparePage() {
             </div>
           </div>
 
-          {/* 👑 修正：件数グラフと金額グラフを縦並びで完全分離！ */}
+          {/* 修正：件数グラフと金額グラフを縦並びで完全分離！ */}
           <div className="space-y-4 pt-2">
             <div className="h-20 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -355,8 +355,8 @@ export default function VLHComparePage() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={100} />
                   <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px" }} />
-                  <Bar dataKey={compareA || "対象A"} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
-                  <Bar dataKey={compareB || "対象B"} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar name={compareA || "対象A"} dataKey={compareA} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar name={compareB || "対象B"} dataKey={compareB} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -369,8 +369,8 @@ export default function VLHComparePage() {
                   <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={100} />
                   <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px" }} />
                   <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "10px" }} />
-                  <Bar dataKey={compareA || "対象A"} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
-                  <Bar dataKey={compareB || "対象B"} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar name={compareA || "対象A"} dataKey={compareA} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar name={compareB || "対象B"} dataKey={compareB} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
