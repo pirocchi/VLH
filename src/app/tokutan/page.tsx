@@ -230,7 +230,7 @@ export default function VLHTokutanPage() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価設定管理起動中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">特別単価管理・分析 展開中...</div>;
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
