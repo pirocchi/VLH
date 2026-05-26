@@ -12,14 +12,17 @@ export const fetchCache = "force-no-store";
 const dictPath = path.join(process.cwd(), "..", "03_Memory", "mimir_dictionary.json");
 const BLOB_FILENAME = "mimir_dictionary.json";
 
-// 辞書データのサルベージ（読み込み・兼ローカルへの逆方向自動同期）
+// 辞書データのサルベージ（読み込み）
 export async function GET() {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
+    
+    // 👑 完璧に機能していた物理実在判定！隣に「03_Memory」があるか否かだけで100%仕分ける
     const isLocalEnv = fs.existsSync(path.join(process.cwd(), "..", "03_Memory"));
+    const isCloudEnv = !isLocalEnv;
 
-    // 🌐 トークンが存在する場合、実行環境を問わず、常にクラウド（Blob）上の最新マスタデータを最優先スキャン！！！
-    if (token) {
+    if (isCloudEnv && token) {
+      // 🌐 クラウドランタイム：トークンを使ってPrivateストア内のファイル一覧をフェッチ
       const { blobs } = await list({ token });
       const dictBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary"));
 
@@ -27,7 +30,7 @@ export async function GET() {
         // アップロード日時が最も新しいデータを最優先ソート
         dictBlobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
         
-        // Privateファイルへのアクセス権を得て強行突破
+        // 💡 核心：Privateファイルへのアクセス権を得るため、fetch時のヘッダーにBlobトークンを直接装填して強行突破！！！
         const res = await fetch(dictBlobs[0].url, {
           cache: "no-store",
           headers: {
@@ -36,25 +39,13 @@ export async function GET() {
         });
         
         if (res.ok) {
-          const cloudData = await res.json();
-          
-          // 👑 【第3戦区・逆方向自動同期の覚醒】
-          // ローカルPC環境での実行であれば、クラウドから吸い上げた最新の神データを、
-          // その場で社内PCの物理ディスク（03_Memory）へ100%完全自動で上書き保存（ミラーバック）を執行！！！
-          if (isLocalEnv) {
-            const dirname = path.dirname(dictPath);
-            if (!fs.existsSync(dirname)) {
-              fs.mkdirSync(dirname, { recursive: true });
-            }
-            fs.writeFileSync(dictPath, JSON.stringify(cloudData, null, 2), "utf-8");
-          }
-          
-          return NextResponse.json(cloudData);
+          const data = await res.json();
+          return NextResponse.json(data);
         }
       }
     }
 
-    // 🏠 フォールバック：Blobストアが空、またはオフライン通信障害時のみ、ローカルの物理ディスクデータをスキャン
+    // 🏠 ローカルランタイム：社内PC内の物理ディスクを安全スキャン
     if (fs.existsSync(dictPath)) {
       const data = fs.readFileSync(dictPath, "utf-8");
       return NextResponse.json(JSON.parse(data));
@@ -63,11 +54,6 @@ export async function GET() {
     return NextResponse.json({ master_partners: [] });
   } catch (error) {
     console.error("🚨 Dictionary GET Error:", error);
-    // 🛡️ 最深部防衛：万が一通信が一時遮断されても、ローカルPC内の既存ファイルを最終防衛ラインとして返却
-    if (fs.existsSync(dictPath)) {
-      const data = fs.readFileSync(dictPath, "utf-8");
-      return NextResponse.json(JSON.parse(data));
-    }
     return NextResponse.json({ master_partners: [] });
   }
 }
@@ -80,18 +66,10 @@ export async function POST(request: Request) {
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     const isLocalEnv = fs.existsSync(path.join(process.cwd(), "..", "03_Memory"));
+    const isCloudEnv = !isLocalEnv;
 
-    // 🏠 1. ローカルPC環境での実行なら、確実に物理ディスク（03_Memory）へ即時永続書き込み
-    if (isLocalEnv) {
-      const dirname = path.dirname(dictPath);
-      if (!fs.existsSync(dirname)) {
-        fs.mkdirSync(dirname, { recursive: true });
-      }
-      fs.writeFileSync(dictPath, jsonString, "utf-8");
-    }
-
-    // 🌐 2. トークンが実在する場合、実行環境を問わず本番Blobストレージへ常時二重ミラーリング保存
-    if (token) {
+    if (isCloudEnv && token) {
+      // 🌐 クラウドランタイム：💡 accessを "private" へ絶対変更し、Privateストアの規律に完全適合！！！
       const blob = await put(BLOB_FILENAME, jsonString, {
         access: "private", 
         addRandomSuffix: true,
@@ -99,6 +77,7 @@ export async function POST(request: Request) {
         token
       });
 
+      // 過去の乱数付き残骸ファイルをバックグラウンドで一斉掃討
       try {
         const { blobs } = await list({ token });
         const oldBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary") && b.url !== blob.url);
@@ -106,9 +85,17 @@ export async function POST(request: Request) {
           await del(oldBlobs.map(b => b.url), { token });
         }
       } catch (e) { /* スルー */ }
-    }
 
-    return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, url: blob.url });
+    } else {
+      // 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み
+      const dirname = path.dirname(dictPath);
+      if (!fs.existsSync(dirname)) {
+        fs.mkdirSync(dirname, { recursive: true });
+      }
+      fs.writeFileSync(dictPath, jsonString, "utf-8");
+      return NextResponse.json({ success: true });
+    }
   } catch (error: any) {
     console.error("🚨 Dictionary POST Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
