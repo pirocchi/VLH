@@ -16,7 +16,8 @@ const BLOB_FILENAME = "mimir_dictionary.json";
 export async function GET() {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    const isCloudEnv = process.env.VERCEL === "1" || !!token;
+    // 👑 【絶対隔離】!!token を排除し、Vercelの本番クラウド runtime 上でのみ動作するように厳格化！！！
+    const isCloudEnv = process.env.VERCEL === "1";
 
     if (isCloudEnv && token) {
       // 🌐 クラウドランタイム：トークンを使ってPrivateストア内のファイル一覧をフェッチ
@@ -42,7 +43,7 @@ export async function GET() {
       }
     }
 
-    // 🏠 ローカルランタイム：社内PC内の物理ディスクを安全スキャン
+    # 🏠 ローカルランタイム：社内PC内の物理ディスクを安全スキャン
     if (fs.existsSync(dictPath)) {
       const data = fs.readFileSync(dictPath, "utf-8");
       return NextResponse.json(JSON.parse(data));
@@ -62,7 +63,8 @@ export async function POST(request: Request) {
     const jsonString = JSON.stringify(body, null, 2);
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    const isCloudEnv = process.env.VERCEL === "1" || !!token;
+    // 👑 【絶対隔離】ローカルPCでの実行時は、絶対にBlobストアへの誤爆上書きを100%シャットアウト！！！
+    const isCloudEnv = process.env.VERCEL === "1";
 
     if (isCloudEnv && token) {
       // 🌐 クラウドランタイム：💡 accessを "private" へ絶対変更し、Privateストアの規律に完全適合！！！
@@ -84,7 +86,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true, url: blob.url });
     } else {
-      // 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み
+      # 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み
       const dirname = path.dirname(dictPath);
       if (!fs.existsSync(dirname)) {
         fs.mkdirSync(dirname, { recursive: true });
