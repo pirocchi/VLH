@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
   Crown, ArrowUp, ArrowRight, ShieldAlert, Award, 
-  Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare, BrainCircuit,
-  ArrowUpRight, ExternalLink, Loader2 // 👑 Backlog連携用のアセットを追加
+  Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare, BrainCircuit
 } from "lucide-react";
 
 const TokutanKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
@@ -59,15 +58,10 @@ export default function VLHTokutanPage() {
   const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
-  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("" );
+  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
-  const [aiAdvice, setAiAdvice] = useState<string>("" );
+  const [aiAdvice, setAiAdvice] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
-
-  // 👑 Backlogコメント送信用のステート群を追加
-  const [backlogLoading, setBacklogLoading] = useState<boolean>(false);
-  const [backlogStatus, setBacklogStatus] = useState<'success' | 'error' | null>(null);
-  const [backlogError, setBacklogError] = useState<string>("");
 
   useEffect(() => {
     const initializeData = async () => {
@@ -110,13 +104,8 @@ export default function VLHTokutanPage() {
         finalName = match.real_name;
       }
 
-      // 👑 マスタから backlog_issue_key も漏れなく抽出してマップの初期オブジェクトに仕込む！
       if (!map[finalName]) {
-        map[finalName] = { 
-          name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, 
-          ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", 
-          hasValidUnit: false, backlogIssueKey: match?.backlog_issue_key || "" 
-        };
+        map[finalName] = { name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", hasValidUnit: false };
       }
 
       map[finalName].ids.add(rawId);
@@ -125,6 +114,8 @@ export default function VLHTokutanPage() {
       const count = row.issued_count || 0;
       const staticUnitGross = row.unit_gross || 16500;
 
+      // 👑 【絶対防壁】成果が発生している行（count > 0）の単価を最優先でロック！
+      // 成果0件の日のデフォルト値（16,500円）による上書き汚染を完全に遮断します！！！
       if (count > 0 || !map[finalName].hasValidUnit) {
         map[finalName].detectedUnitGross = staticUnitGross;
         map[finalName].detectedAsp = asp;
@@ -160,6 +151,7 @@ export default function VLHTokutanPage() {
         if (p.detectedAsp === "QUORIZa") {
           isSpecial = true;
         } else {
+          // 👑 汚染が除去された純粋な確定単価でMスタテーブルと厳密照合！
           const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 10);
 
           if (found) {
@@ -181,8 +173,7 @@ export default function VLHTokutanPage() {
 
       const mainAsp = Object.keys(p.asps).join(" / ");
 
-      // 👑 配列展開時にも backlogIssueKey を末端まで完全保持
-      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey };
+      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
@@ -211,7 +202,6 @@ export default function VLHTokutanPage() {
 
   useEffect(() => {
     setAiAdvice("");
-    setBacklogStatus(null); // パートナー切り替え時に投稿ステータスもクリーンにリセット
   }, [currentPartner]);
 
   const handleGenerateAdvice = async () => {
@@ -237,59 +227,6 @@ export default function VLHTokutanPage() {
       setAiAdvice("⚠️ 通信が一時的に遮断されました。");
     } finally {
       setAiLoading(false);
-    }
-  };
-
-  // 👑 カンマ区切りの複数キーをパースして個別バッジリンクを生成する関数
-  const parseBacklogKeys = (keysString?: string) => {
-    if (!keysString || !keysString.trim()) return [];
-    return keysString
-      .split(",")
-      .map((k) => k.trim())
-      .filter((k) => k !== "")
-      .map((key, index, arr) => {
-        const isLatest = index === arr.length - 1;
-        return {
-          key,
-          label: arr.length === 1 ? "課題スレッド" : isLatest ? "現行最新" : `過去ログ Vol.${index + 1}`,
-          isLatest,
-          url: `https://mkg.backlog.com/view/${key}`
-        };
-      });
-  };
-
-  // 👑 バックエンドAPIへ最新スレッドを狙い撃ちして自動コメント投稿を射出する関数
-  const handlePostBacklogComment = async (actionType: 'pricing' | 'exposure') => {
-    if (!currentPartner || !currentPartner.backlogIssueKey) return;
-    try {
-      setBacklogLoading(true);
-      setBacklogStatus(null);
-      const res = await fetch("/api/backlog", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          backlogIssueKey: currentPartner.backlogIssueKey,
-          partnerName: currentPartner.name,
-          actionType: actionType,
-          currentTier: currentPartner.currentTier.name,
-          cv: currentPartner.cv,
-          gross: currentPartner.normalized_gross,
-          net: currentPartner.partnerProfit
-        })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setBacklogStatus('success');
-        setTimeout(() => setBacklogStatus(null), 3000);
-      } else {
-        setBacklogStatus('error');
-        setBacklogError(data.error || "投稿に失敗しました。");
-      }
-    } catch (e) {
-      setBacklogStatus('error');
-      setBacklogError("通信エラーが発生しました。");
-    } finally {
-      setBacklogLoading(false);
     }
   };
 
@@ -376,72 +313,6 @@ export default function VLHTokutanPage() {
                         </p>
                       )}
                     </div>
-                  </div>
-
-                  {/* 👑 【第2戦区・究極マウント】左翼ステータスの真下に、一糸乱れぬ美しさで複数チケット動的バッジ ＆ コメント一撃投函システムを設置！！！ */}
-                  <div className="mt-5 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800/60 space-y-3">
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className="text-[10px] font-black text-slate-400 mr-1 select-none">対応Backlogスレッド:</span>
-                      {currentPartner.backlogIssueKey ? (
-                        parseBacklogKeys(currentPartner.backlogIssueKey).map((issue, idx) => (
-                          <a
-                            key={idx}
-                            href={issue.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`px-2 py-0.5 rounded text-[10px] font-black flex items-center gap-1 border transition-all ${
-                              issue.isLatest
-                                ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white"
-                                : "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
-                            }`}
-                          >
-                            {issue.label}
-                            <ExternalLink size={10} />
-                          </a>
-                        ))
-                      ) : (
-                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">キー未登録</span>
-                      )}
-                    </div>
-
-                    {currentPartner.backlogIssueKey && (
-                      <div className="flex items-center gap-2 pt-0.5">
-                        {backlogStatus === null && (
-                          <>
-                            <button
-                              disabled={backlogLoading}
-                              onClick={() => handlePostBacklogComment('pricing')}
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1 disabled:opacity-50"
-                            >
-                              {backlogLoading ? <Loader2 size={12} className="animate-spin" /> : <MessageSquare size={12} />}
-                              特単変更を通知
-                            </button>
-                            <button
-                              disabled={backlogLoading}
-                              onClick={() => handlePostBacklogComment('exposure')}
-                              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1 disabled:opacity-50"
-                            >
-                              露出拡大を通知
-                            </button>
-                          </>
-                        )}
-
-                        {backlogStatus === 'success' && (
-                          <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200 select-none">
-                            最新チケットへ投函完了！
-                          </span>
-                        )}
-
-                        {backlogStatus === 'error' && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1" title={backlogError}>
-                              投稿失敗
-                            </span>
-                            <button onClick={() => setBacklogStatus(null)} className="text-[10px] font-bold text-slate-400 hover:text-slate-500 underline">リトライ</button>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
 
