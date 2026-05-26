@@ -16,8 +16,11 @@ const BLOB_FILENAME = "mimir_dictionary.json";
 export async function GET() {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    // Vercelの本番クラウド runtime 上でのみ動作するように厳格化
-    const isCloudEnv = process.env.VERCEL === "1";
+    
+    // 👑 【物理絶対判定】気まぐれな環境変数を完全パージ！
+    // 隣に「03_Memory」フォルダが物理実在する場合のみローカルと見なし、それ以外は100%クラウドと判定する超自動防壁！！！
+    const isLocalEnv = fs.existsSync(path.join(process.cwd(), "..", "03_Memory"));
+    const isCloudEnv = !isLocalEnv;
 
     if (isCloudEnv && token) {
       // 🌐 クラウドランタイム：トークンを使ってPrivateストア内のファイル一覧をフェッチ
@@ -43,7 +46,6 @@ export async function GET() {
       }
     }
 
-    // 👑 【完全大修復】不浄なるシャープを排除し、正規の//コメントへ調停！！！
     // 🏠 ローカルランタイム：社内PC内の物理ディスクを安全スキャン
     if (fs.existsSync(dictPath)) {
       const data = fs.readFileSync(dictPath, "utf-8");
@@ -64,8 +66,10 @@ export async function POST(request: Request) {
     const jsonString = JSON.stringify(body, null, 2);
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    // ローカルPCでの実行時は、絶対にBlobストアへの誤爆上書きを100%シャットアウト！！！
-    const isCloudEnv = process.env.VERCEL === "1";
+    
+    // 👑 【物理絶対判定】POST側もフォルダの実在ファクトのみで100%安全に仕分ける！！！
+    const isLocalEnv = fs.existsSync(path.join(process.cwd(), "..", "03_Memory"));
+    const isCloudEnv = !isLocalEnv;
 
     if (isCloudEnv && token) {
       // 🌐 クラウドランタイム：💡 accessを "private" へ絶対変更し、Privateストアの規律に完全適合！！！
@@ -87,7 +91,6 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true, url: blob.url });
     } else {
-      // 👑 【完全大修復】不浄なるシャープを排除し、正規の//コメントへ調停！！！
       // 🏠 ローカルランタイム：確実に社内PCの物理ディスク（03_Memory）へ即時永続書き込み
       const dirname = path.dirname(dictPath);
       if (!fs.existsSync(dirname)) {
