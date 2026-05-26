@@ -116,10 +116,12 @@ export default function VLHComparePage() {
         const match = dictData.master_partners?.find((e: any) => e.aliases?.includes(rawName) || e.aliases?.includes(row.media_id));
         return (match ? match.real_name : rawName) === name;
       });
+      
+      // 👑 【絶対修正】reduce内の要素参照を「row」から正しい引数「r」に大修復！！！
       return {
-        cv: rows.reduce((sum, r) => sum + (row.issued_count || 0), 0),
-        gross: rows.reduce((sum, r) => sum + (row.normalized_gross || 0), 0),
-        net: rows.reduce((sum, r) => sum + (row.normalized_net || 0), 0)
+        cv: rows.reduce((sum, r) => sum + (r.issued_count || 0), 0),
+        gross: rows.reduce((sum, r) => sum + (r.normalized_gross || 0), 0),
+        net: rows.reduce((sum, r) => sum + (r.normalized_net || 0), 0)
       };
     };
 
