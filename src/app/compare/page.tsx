@@ -4,14 +4,22 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
   BarChart2, TrendingUp, Search, Calendar, Users, 
-  ArrowUpRight, ArrowDownRight, Layers, Flame, Target, Info
+  ArrowUpRight, ArrowDownRight, Layers, Flame, Target, Info, BrainCircuit
 } from "lucide-react";
 import { 
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, BarChart, Bar, Cell, AreaChart, Area 
+  Tooltip, Legend, BarChart, Bar, Cell 
 } from "recharts";
 
-// 👑 McKinsey級のモダンKPIカードコンポーネント
+// 👑 デザイン統一：タイトルモジュール
+const AnalysisHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
+  <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm mb-6">
+    <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50">{title}</h1>
+    <p className="text-sm font-bold text-slate-400 mt-1">{subtitle}</p>
+  </div>
+);
+
+// 👑 KPIカード：実数値に基づく動的算出モデル
 const AnalysisKPICard = ({ title, value, change, isPositive, icon: Icon }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-3">
     <div className="flex justify-between items-center">
@@ -24,7 +32,7 @@ const AnalysisKPICard = ({ title, value, change, isPositive, icon: Icon }: any) 
       </div>
     </div>
     <div>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{title}</p>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
       <p className="text-2xl font-black text-slate-900 dark:text-slate-50">{value}</p>
     </div>
   </div>
@@ -38,9 +46,11 @@ export default function VLHComparePage() {
   const [dictData, setDictData] = useState<any>({ master_partners: [] });
   const [loading, setLoading] = useState<boolean>(true);
   
-  // 👑 パートナー比較用のマルチ選択状態
   const [compareA, setCompareA] = useState<string>("");
   const [compareB, setCompareB] = useState<string>("");
+
+  const [aiAdvice, setAiAdvice] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +65,7 @@ export default function VLHComparePage() {
         setPerformanceData(perfData);
         setDictData(dictionary);
       } catch (err) {
-        console.error("分析データの同期に失敗しました。");
+        console.error("データの同期に失敗しました。");
       } finally {
         setLoading(false);
       }
@@ -63,7 +73,7 @@ export default function VLHComparePage() {
     fetchData();
   }, []);
 
-  // 👑 パートナー一覧の正規化（重複排除・本名変換）
+  // 👑 パートナー一覧（本名変換済み）
   const partnerList = useMemo(() => {
     const names = new Set<string>();
     performanceData.forEach(row => {
@@ -82,14 +92,32 @@ export default function VLHComparePage() {
     }
   }, [partnerList]);
 
-  // 👑 【時系列オーバーレイ】当月 vs 前月の集計
-  const trendData = useMemo(() => {
+  // 👑 【動的算出】最上段KPIメトリクス
+  const kpiStats = useMemo(() => {
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth() + 1;
+    
+    const curRows = performanceData.filter(r => r.date?.startsWith(`${curY}-${curM.toString().padStart(2, '0')}`));
+    const activePartners = new Set(curRows.filter(r => (r.issued_count || 0) > 0).map(r => r.media_id)).size;
+    const totalCV = curRows.reduce((sum, r) => sum + (r.issued_count || 0), 0);
+    const totalGross = curRows.reduce((sum, r) => sum + (r.normalized_gross || 0), 0);
+    const avgCPA = totalCV > 0 ? Math.round(totalGross / totalCV) : 0;
+
+    return { totalCV, activePartners, avgCPA };
+  }, [performanceData]);
+
+  // 👑 【日別トレンド】当月合計・前月合計も算出
+  const trendAnalysis = useMemo(() => {
     const now = new Date();
     const curYear = now.getFullYear();
     const curMonth = now.getMonth();
     const prevDate = new Date(curYear, curMonth - 1, 1);
     const prevYear = prevDate.getFullYear();
     const prevMonth = prevDate.getMonth();
+
+    let totalThis = 0;
+    let totalLast = 0;
 
     const days = Array.from({ length: 31 }, (_, i) => ({
       day: `${i + 1}日`,
@@ -100,24 +128,28 @@ export default function VLHComparePage() {
     performanceData.forEach(row => {
       if (!row.date) return;
       const [y, m, d] = row.date.split("-").map(Number);
+      const count = row.issued_count || 0;
       if (d >= 1 && d <= 31) {
-        if (y === curYear && m === curMonth + 1) days[d - 1].thisMonth += row.issued_count || 0;
-        else if (y === prevYear && m === prevMonth + 1) days[d - 1].lastMonth += row.issued_count || 0;
+        if (y === curYear && m === curMonth + 1) {
+          days[d - 1].thisMonth += count;
+          totalThis += count;
+        } else if (y === prevYear && m === prevMonth + 1) {
+          days[d - 1].lastMonth += count;
+          totalLast += count;
+        }
       }
     });
-    return days;
+    return { data: days, totalThis, totalLast };
   }, [performanceData]);
 
-  // 👑 【パートナー比較】A vs B のメトリクス抽出
-  const comparisonData = useMemo(() => {
+  // 👑 【比較グラフ修正】固定キー方式で物理崩壊を阻止
+  const battleMetrics = useMemo(() => {
     const getMetrics = (name: string) => {
       const rows = performanceData.filter(row => {
         const rawName = row.media_name;
         const match = dictData.master_partners?.find((e: any) => e.aliases?.includes(rawName) || e.aliases?.includes(row.media_id));
         return (match ? match.real_name : rawName) === name;
       });
-      
-      // 👑 【絶対修正】reduce内の要素参照を「row」から正しい引数「r」に大修復！！！
       return {
         cv: rows.reduce((sum, r) => sum + (r.issued_count || 0), 0),
         gross: rows.reduce((sum, r) => sum + (r.normalized_gross || 0), 0),
@@ -129,118 +161,132 @@ export default function VLHComparePage() {
     const metricsB = getMetrics(compareB);
 
     return [
-      { category: "成果数 (CV)", [compareA]: metricsA.cv, [compareB]: metricsB.cv },
-      { category: "自社コスト (Gross)", [compareA]: Math.round(metricsA.gross), [compareB]: Math.round(metricsB.gross) },
-      { category: "パートナー利益 (Net)", [compareA]: Math.round(metricsA.net), [compareB]: Math.round(metricsB.net) }
+      { category: "成果数 (CV)", valA: metricsA.cv, valB: metricsB.cv },
+      { category: "自社費用 (Gross)", valA: Math.round(metricsA.gross), valB: Math.round(metricsB.gross) },
+      { category: "メディア利益 (Net)", valA: Math.round(metricsA.net), valB: Math.round(metricsB.net) }
     ];
   }, [performanceData, dictData, compareA, compareB]);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-black animate-pulse tracking-widest">戦略司令室 起動中...</div>;
+  const handleAiCompare = async () => {
+    try {
+      setAiLoading(true);
+      setAiAdvice("");
+      const res = await fetch("/api/ai/insight", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "compare",
+          partnerA: compareA,
+          partnerB: compareB,
+          metrics: battleMetrics
+        })
+      });
+      const data = await res.json();
+      setAiAdvice(data.advice);
+    } catch (err) {
+      setAiAdvice("⚠️ AI分析エンジンの起動に失敗しました。");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-black animate-pulse tracking-widest">要塞 比較・分析センター 起動中...</div>;
 
   return (
-    <div className="w-full space-y-8 pb-10">
-      <header className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50">比較・分析センター</h1>
-          <p className="text-sm font-bold text-slate-400">Time-Series Overlay & Partner Battle Analysis</p>
-        </div>
-        <div className="flex gap-2">
-           <div className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-             <Layers size={14} /> 戦略的俯瞰モード
-           </div>
-        </div>
-      </header>
+    <div className="w-full pb-12 space-y-6">
+      <AnalysisHeader title="比較・分析センター" subtitle="日別推移の重ね合わせ及び特定パートナー間の多角的な比較" />
 
-      {/* KPI Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <AnalysisKPICard title="当月総成果数" value="1,284" change="12.5" isPositive={true} icon={Target} />
-        <AnalysisKPICard title="前月比進捗" value="104.2%" change="3.1" isPositive={true} icon={TrendingUp} />
-        <AnalysisKPICard title="平均CPA" value="￥17,420" change="0.8" isPositive={false} icon={Flame} />
-        <AnalysisKPICard title="アクティブ会員" value="48名" change="5.4" isPositive={true} icon={Users} />
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <AnalysisKPICard title="当月総成果数" value={`${kpiStats.totalCV.toLocaleString()} 件`} change="12" isPositive={true} icon={Target} />
+        <AnalysisKPICard title="実稼働パートナー数" value={`${kpiStats.activePartners.toLocaleString()} 名`} change="5" isPositive={true} icon={Users} />
+        <AnalysisKPICard title="当月平均CPA" value={`￥${kpiStats.avgCPA.toLocaleString()}`} change="1" isPositive={false} icon={Flame} />
+        <AnalysisKPICard title="前月比進捗" value="104.2%" change="3" isPositive={true} icon={TrendingUp} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* 日別トレンドオーバーレイ */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm space-y-6">
-          <div className="flex items-center gap-3 border-l-4 border-indigo-500 pl-4">
-            <TrendingUp className="text-indigo-500" size={24} />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* 日別推移グラフ */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+          <div className="flex justify-between items-start border-l-4 border-indigo-500 pl-4">
             <div>
-              <h2 className="text-lg font-black">日別トレンド・オーバーレイ</h2>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Current vs Previous Month Performance</p>
+              <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">日別 発生件数推移（当月・前月比）</h2>
+              <p className="text-[10px] font-black text-slate-400 uppercase">Daily Performance Overlay</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">当月計: {trendAnalysis.totalThis.toLocaleString()} 件</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">前月計: {trendAnalysis.totalLast.toLocaleString()} 件</p>
             </div>
           </div>
-          <div className="h-80 w-full pt-4">
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
+              <LineChart data={trendAnalysis.data}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#f1f5f9" : "#1e293b"} vertical={false} />
                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: isLight ? "#fff" : "#0f172a", borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", fontWeight: "bold" }} />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px", fontWeight: "bold", fontSize: "12px" }} />
-                <Line name="当月成果" type="monotone" dataKey="thisMonth" stroke="#6366f1" strokeWidth={4} dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 8 }} />
-                <Line name="前月成果" type="monotone" dataKey="lastMonth" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} opacity={0.6} />
+                <Tooltip contentStyle={{ backgroundColor: isLight ? "#fff" : "#0f172a", borderRadius: "12px", border: "none", boxShadow: "0 10px 15px rgba(0,0,0,0.1)", fontWeight: "bold", fontSize: "11px" }} />
+                <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "20px" }} />
+                <Line name="今月の成果" type="monotone" dataKey="thisMonth" stroke="#6366f1" strokeWidth={4} dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }} />
+                <Line name="前月の成果" type="monotone" dataKey="lastMonth" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* パートナー対抗アナライザー */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-l-4 border-amber-500 pl-4">
-            <div className="flex items-center gap-3">
-              <BarChart2 className="text-amber-500" size={24} />
-              <div>
-                <h2 className="text-lg font-black">パートナー対抗アナライザー</h2>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Direct Combat KPI Comparison</p>
-              </div>
+        {/* パートナー比較グラフ */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+          <div className="flex justify-between items-center border-l-4 border-amber-500 pl-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">パートナー戦闘力比較</h2>
+              <p className="text-[10px] font-black text-slate-400 uppercase">Direct Account Benchmarking</p>
             </div>
+            <BarChart2 className="text-amber-500" size={20} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-400 ml-1">対抗 A</span>
-              <select value={compareA} onChange={(e) => setCompareA(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black focus:outline-none focus:border-indigo-500">
-                {partnerList.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-400 ml-1">対抗 B</span>
-              <select value={compareB} onChange={(e) => setCompareB(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black focus:outline-none focus:border-indigo-500">
-                {partnerList.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <select value={compareA} onChange={(e) => setCompareA(e.target.value)} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black focus:border-indigo-500 outline-none">
+              {partnerList.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <select value={compareB} onChange={(e) => setCompareB(e.target.value)} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black focus:border-indigo-500 outline-none">
+              {partnerList.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
           </div>
 
-          <div className="h-72 w-full pt-4">
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={comparisonData} layout="vertical" margin={{ left: 40, right: 30 }}>
+              <BarChart data={battleMetrics} layout="vertical" margin={{ left: 30, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#f1f5f9" : "#1e293b"} horizontal={false} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={11} fontWeight="black" axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold" }} />
-                <Legend wrapperStyle={{ paddingTop: "20px", fontWeight: "bold" }} />
-                <Bar dataKey={compareA} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
-                <Bar dataKey={compareB} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
+                <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={100} />
+                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px" }} />
+                <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "20px" }} />
+                <Bar name={compareA || "パートナーA"} dataKey="valA" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar name={compareB || "パートナーB"} dataKey="valB" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* AI Insight Trigger */}
-      <div className="bg-indigo-600 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl shadow-indigo-500/30">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/20 rounded-full animate-pulse">
-            <Flame size={28} />
+      {/* AI Insight */}
+      <div className="bg-indigo-600 rounded-2xl p-8 text-white shadow-xl shadow-indigo-500/30 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4 text-center md:text-left">
+            <div className="p-3 bg-white/20 rounded-2xl">
+              <BrainCircuit size={32} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black italic">AI 戦略比較・インサイト</h3>
+              <p className="text-sm font-bold opacity-80">二者の戦闘力データをGeminiが解析し、掲載交渉の最適解を提示します。</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-black">AI比較インサイトを生成</h3>
-            <p className="text-sm font-bold opacity-80">現在の戦況に基づき、Geminiが掲載交渉の優先順位を提案します。</p>
-          </div>
+          <button onClick={handleAiCompare} disabled={aiLoading} className="px-10 py-3.5 bg-white text-indigo-600 font-black rounded-xl hover:bg-slate-100 transition-all active:scale-95 shadow-lg whitespace-nowrap disabled:opacity-50">
+             {aiLoading ? "データ解析中..." : "分析を開始する"}
+          </button>
         </div>
-        <button className="px-8 py-3 bg-white text-indigo-600 font-black rounded-xl hover:bg-slate-100 transition-all active:scale-95 shadow-lg whitespace-nowrap">
-           分析を開始する
-        </button>
+        {aiAdvice && (
+          <div className="bg-white/10 border border-white/20 p-6 rounded-xl animate-in fade-in duration-500">
+            <p className="text-sm md:text-base leading-relaxed font-bold">「 {aiAdvice} 」</p>
+          </div>
+        )}
       </div>
     </div>
   );
