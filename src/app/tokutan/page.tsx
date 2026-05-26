@@ -5,7 +5,7 @@ import { ThemeContext } from "../layout";
 import { 
   Crown, ArrowUp, ArrowRight, ShieldAlert, Award, 
   Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare, BrainCircuit,
-  ArrowUpRight, ExternalLink, Loader2 // 👑 Backlog連携用のアセットを追加
+  ExternalLink, Loader2
 } from "lucide-react";
 
 const TokutanKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
@@ -59,12 +59,11 @@ export default function VLHTokutanPage() {
   const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
-  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("" );
+  const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
-  const [aiAdvice, setAiAdvice] = useState<string>("" );
+  const [aiAdvice, setAiAdvice] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
 
-  // 👑 Backlogコメント送信用のステート群を追加
   const [backlogLoading, setBacklogLoading] = useState<boolean>(false);
   const [backlogStatus, setBacklogStatus] = useState<'success' | 'error' | null>(null);
   const [backlogError, setBacklogError] = useState<string>("");
@@ -110,7 +109,6 @@ export default function VLHTokutanPage() {
         finalName = match.real_name;
       }
 
-      // 👑 マスタから backlog_issue_key も漏れなく抽出してマップの初期オブジェクトに仕込む！
       if (!map[finalName]) {
         map[finalName] = { 
           name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, 
@@ -181,7 +179,6 @@ export default function VLHTokutanPage() {
 
       const mainAsp = Object.keys(p.asps).join(" / ");
 
-      // 👑 配列展開時にも backlogIssueKey を末端まで完全保持
       return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
@@ -211,7 +208,7 @@ export default function VLHTokutanPage() {
 
   useEffect(() => {
     setAiAdvice("");
-    setBacklogStatus(null); // パートナー切り替え時に投稿ステータスもクリーンにリセット
+    setBacklogStatus(null);
   }, [currentPartner]);
 
   const handleGenerateAdvice = async () => {
@@ -240,7 +237,6 @@ export default function VLHTokutanPage() {
     }
   };
 
-  // 👑 カンマ区切りの複数キーをパースして個別バッジリンクを生成する関数
   const parseBacklogKeys = (keysString?: string) => {
     if (!keysString || !keysString.trim()) return [];
     return keysString
@@ -258,8 +254,8 @@ export default function VLHTokutanPage() {
       });
   };
 
-  // 👑 バックエンドAPIへ最新スレッドを狙い撃ちして自動コメント投稿を射出する関数
-  const handlePostBacklogComment = async (actionType: 'pricing' | 'exposure') => {
+  // 👑 投稿関数へ aiAdvice パラメーターを完全に引き渡すように超絶強化！！！
+  const handlePostBacklogComment = async (actionType: 'pricing' | 'exposure' | 'ai_insight', customAdvice?: string) => {
     if (!currentPartner || !currentPartner.backlogIssueKey) return;
     try {
       setBacklogLoading(true);
@@ -274,7 +270,8 @@ export default function VLHTokutanPage() {
           currentTier: currentPartner.currentTier.name,
           cv: currentPartner.cv,
           gross: currentPartner.normalized_gross,
-          net: currentPartner.partnerProfit
+          net: currentPartner.partnerProfit,
+          aiAdvice: customAdvice || "" // 👑 ユーザーの天才的閃きであるアドバイステキストを抱かせて射出！！！
         })
       });
       const data = await res.json();
@@ -378,7 +375,7 @@ export default function VLHTokutanPage() {
                     </div>
                   </div>
 
-                  {/* 👑 【第2戦区・究極マウント】左翼ステータスの真下に、一糸乱れぬ美しさで複数チケット動的バッジ ＆ コメント一撃投函システムを設置！！！ */}
+                  {/* 複数スレッドバッジリンク */}
                   <div className="mt-5 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800/60 space-y-3">
                     <div className="flex flex-wrap gap-1.5 items-center">
                       <span className="text-[10px] font-black text-slate-400 mr-1 select-none">対応Backlogスレッド:</span>
@@ -426,13 +423,14 @@ export default function VLHTokutanPage() {
                           </>
                         )}
 
-                        {backlogStatus === 'success' && (
+                        {/* 下段のAI投函ユニット以外からの通知成功ステート */}
+                        {backlogStatus === 'success' && !aiAdvice && (
                           <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200 select-none">
                             最新チケットへ投函完了！
                           </span>
                         )}
 
-                        {backlogStatus === 'error' && (
+                        {backlogStatus === 'error' && !aiAdvice && (
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-black text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1" title={backlogError}>
                               投稿失敗
@@ -456,11 +454,44 @@ export default function VLHTokutanPage() {
                       </button>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex items-center">
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 min-h-[90px] flex flex-col justify-between gap-3 transition-all">
                       {aiLoading ? (
-                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2">⚡ データを分析中...</p>
+                        <p className="text-xs font-black text-indigo-500 dark:text-indigo-400 animate-pulse tracking-widest flex items-center gap-2 py-4">⚡ データを分析中...</p>
                       ) : (
-                        <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">{aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在のデータに基づく掲載交渉アイデアを生成します。 」"}</p>
+                        <>
+                          <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">{aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在のデータに基づく掲載交渉アイデアを生成します。 」"}</p>
+                          
+                          {/* 👑 最高司令官の神提案：生成された極上AIテキストをそのままBacklog最新スレッドに一撃叩き込むボタンをマウント！！！ */}
+                          {aiAdvice && currentPartner.backlogIssueKey && (
+                            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                              {backlogStatus === null && (
+                                <button
+                                  disabled={backlogLoading}
+                                  onClick={() => handlePostBacklogComment('ai_insight', aiAdvice)}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1 disabled:opacity-50"
+                                >
+                                  {backlogLoading ? <Loader2 size={12} className="animate-spin" /> : <MessageSquare size={12} />}
+                                  この分析内容をBacklogへ送信
+                                </button>
+                              )}
+
+                              {backlogStatus === 'success' && (
+                                <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200 select-none">
+                                  最新チケットへ投函完了！
+                                </span>
+                              )}
+
+                              {backlogStatus === 'error' && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-black text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1" title={backlogError}>
+                                    投稿失敗
+                                  </span>
+                                  <button onClick={() => setBacklogStatus(null)} className="text-[10px] font-bold text-slate-400 hover:text-slate-500 underline">リトライ</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
