@@ -5,7 +5,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { 
   Users, Layers, Crown, Upload, BookOpen, Coins,
-  Sun, Moon, Clock, LayoutDashboard, ChevronRight
+  Sun, Moon, Clock, LayoutDashboard, ChevronRight,
+  BarChart2 // 👑 比較・分析センター用のアイコンを新規追加
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,13 +29,13 @@ export default function RootLayout({
   const rawMenuItems = [
     { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
     { name: "パートナー詳細分析", path: "/partners", icon: Users },
+    { name: "比較・分析センター", path: "/compare", icon: BarChart2 }, // 👑 最適な位置に新規設置
     { name: "パートナー統合設定", path: "/dictionary", icon: BookOpen },
     { name: "プロバイダ詳細分析", path: "/asp", icon: Layers },
     { name: "特別単価管理・分析", path: "/tokutan", icon: Crown },
     { name: "手動・特殊単価設定", path: "/pricing", icon: Coins },
   ];
 
-  // 💡 大解放：臆病なフィルターを完全撤廃し、初期状態からデータ入庫メニューを100%常時装填！
   const [menuItems] = useState<any[]>(rawMenuItems);
 
   useEffect(() => {
@@ -42,8 +43,6 @@ export default function RootLayout({
     if (savedMode) {
       setThemeMode(savedMode);
     }
-
-    // 💡 大粛清：isLocalによるドメイン検閲・隔離壁を完全削除（パージ）！
     setMounted(true);
   }, []);
 
@@ -79,7 +78,6 @@ export default function RootLayout({
       <body className={`${inter.className} h-full m-0 p-0 antialiased overflow-hidden`}>
         <ThemeContext.Provider value={{ activeTheme }}>
           
-          {/* 外殻全体の背景・文字色をTailwindの純正セマンティック（slate-50 / slate-950）へ強制調停 */}
           <div className="flex h-screen w-full flex-col md:flex-row transition-colors duration-500 bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
             
             {/* PC用サイドバー */}
