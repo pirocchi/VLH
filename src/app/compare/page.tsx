@@ -256,7 +256,7 @@ export default function VLHComparePage() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-black animate-pulse tracking-widest">比較・分析センター 展開中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-black animate-pulse text-lg tracking-widest">比較・分析センター 展開中...</div>;
 
   return (
     <div className="w-full pb-12 space-y-6">

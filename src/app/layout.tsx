@@ -6,8 +6,7 @@ import "./globals.css";
 import { 
   Users, Layers, Crown, Upload, BookOpen, Coins,
   Sun, Moon, Clock, LayoutDashboard, ChevronRight,
-  BarChart2,
-  Link2 // 👑 ASPログイン・申請リンク集用のアイコンを新規追加
+  BarChart2, Link2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -35,7 +34,7 @@ export default function RootLayout({
     { name: "プロバイダ詳細分析", path: "/asp", icon: Layers },
     { name: "特別単価管理・分析", path: "/tokutan", icon: Crown },
     { name: "手動・特殊単価設定", path: "/pricing", icon: Coins },
-    { name: "ASPログイン・申請リンク集", path: "/links", icon: Link2 }, // 👑 最下部へ完全マウント！
+    { name: "ＡＳＰ・申請リンク", path: "/links", icon: Link2 }, // 👑 メニュー名も全角9文字へ強制大修正！！！
   ];
 
   const [menuItems] = useState<any[]>(rawMenuItems);
@@ -158,7 +157,7 @@ export default function RootLayout({
                 </nav>
               </header>
 
-              {/* メインコンテンツ表示領域 */}
+              {/* メメインコンテンツ表示領域 */}
               <main className="flex-1 overflow-y-auto scroll-smooth pb-32 md:pb-0">
                 <div className="p-4 sm:p-8">
                   {children}

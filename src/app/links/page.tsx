@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useContext } from "react";
-import { ThemeContext } from "../layout";
-import { 
-  LogIn, Copy, CheckCircle, FileSignature, 
-  ExternalLink, Link2, Info
-} from "lucide-react";
+import React, { useState } from "react";
+import { LogIn, Copy, CheckCircle, FileSignature, ExternalLink, Link2, Info } from "lucide-react";
 
-// 👑 クリップボードコピー機能付きのID入力コンポーネント
+// 👑 他のページと完全に高さを統一した、アイコン・説明文なしのシンプルヘッダー
+const LinksHeader = ({ title }: { title: string }) => (
+  <div className="px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm mb-6 flex justify-between items-center">
+    <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-50">{title}</h1>
+  </div>
+);
+
 const CopyableIdInput = ({ value, label }: { value: string, label: string }) => {
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -15,7 +17,7 @@ const CopyableIdInput = ({ value, label }: { value: string, label: string }) => 
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // 2秒後にアイコンを戻す
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("IDのコピーに失敗しました。");
     }
@@ -37,7 +39,7 @@ const CopyableIdInput = ({ value, label }: { value: string, label: string }) => 
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500 dark:hover:text-indigo-400 hover:scale-105 transition-all shadow-sm"
         >
           {copied ? (
-            <CheckCircle size={14} className="text-emerald-500animate-in fade-in zoom-in-50 duration-200" />
+            <CheckCircle size={14} className="text-emerald-500 animate-in fade-in zoom-in-50 duration-200" />
           ) : (
             <Copy size={14} className="transition-all" />
           )}
@@ -47,7 +49,6 @@ const CopyableIdInput = ({ value, label }: { value: string, label: string }) => 
   );
 };
 
-// 👑 各ASPのカードコンポーネント（厨二病・横文字ハラスメントの完全パージ）
 const AspCard = ({ asp }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[260px]">
     <div className="space-y-4 flex-1">
@@ -61,13 +62,11 @@ const AspCard = ({ asp }: any) => (
         </div>
       </div>
       
-      {/* 👑 最高司令官の神提案：IDコピーボタン */}
       <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 space-y-2.5">
         <CopyableIdInput label="ログイン用ID（コピー）" value={asp.copyId} />
       </div>
     </div>
 
-    {/* ログイン直行ボタン（インディゴの絶対正解カラー） */}
     <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60">
       <a 
         href={asp.loginUrl} 
@@ -81,7 +80,6 @@ const AspCard = ({ asp }: any) => (
   </div>
 );
 
-// 👑 社内申請フォームのカードコンポーネント（アイコンと日本語のみで構成）
 const InternalFormCard = ({ form }: any) => (
   <div className="p-6 bg-slate-950 text-slate-50 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-6 items-center shadow-lg border border-emerald-500/20 dark:border-emerald-500/30">
     <div className="md:col-span-2 space-y-3">
@@ -111,49 +109,32 @@ const InternalFormCard = ({ form }: any) => (
 );
 
 export default function VLHLinksPage() {
-  const { activeTheme } = useContext(ThemeContext);
-  const isLight = activeTheme === "light";
-
-  // 👑 【データ編集エリア：ASPログイン情報】
-  // 出来上がった画面を確認した後、実際のIDとログインURLに一撃で書き換えてやってくださいませ！！！
+  // 👑 タイトル文字の適正化モデル（afb / felmat / QUORIZa へ完全修正）
   const aspLinks = [
-    { name: "A8.net", description: "国内最大級。キャンペーン情報の確認やレポートの精査に。", copyId: "arrow8-a8", loginUrl: "#" }, // ←ログインIDとURLを修正！
+    { name: "A8.net", description: "国内最大級。キャンペーン情報の確認やレポートの精査に。", copyId: "arrow8-a8", loginUrl: "#" },
     { name: "もしもアフィリエイト", description: "かんたんリンク等の管理、プロモーションの進捗確認に。", copyId: "moshimo-a8", loginUrl: "#" },
-    { name: "afb (アフィビー)", description: "報酬支払いサイクルや担当者との連携管理に。", copyId: "afb-arrow8", loginUrl: "#" },
+    { name: "afb", description: "報酬支払いサイクルや担当者との連携管理に。", copyId: "afb-arrow8", loginUrl: "#" },
     { name: "AccessTrade", description: "金融・Eコマース系に強い。安定した運用の確認に。", copyId: "at-arrow8", loginUrl: "#" },
-    { name: "felmat (フェルマ)", description: "クローズドASPならではの密な連携、特別単価の調整に。", copyId: "arrow8eight", loginUrl: "#" },
-    { name: "QUORIZa (クオリザ)", description: "最新のアフィリエイト機能、独自指標のモニタリングに。", copyId: "qz-arrow8", loginUrl: "#" },
+    { name: "felmat", description: "クローズドASPならではの密な連携、特別単価の調整に。", copyId: "arrow8eight", loginUrl: "#" },
+    { name: "QUORIZa", description: "最新のアフィリエイト機能、独自指標のモニタリングに。", copyId: "qz-arrow8", loginUrl: "#" },
   ];
 
-  // 👑 【データ編集エリア：社内フォーム情報】
   const internalForm = {
     name: "特別単価申請フォーム（社内用）",
-    url: "#" // ←実際のGoogleフォーム等のURLを修正！
+    url: "#"
   };
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
-      {/* クリーンな業務用日本語ヘッダー */}
-      <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-        <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-sm flex-shrink-0">
-                <Link2 size={24} />
-            </div>
-            <div>
-                <h1 className="text-xl font-black tracking-tight">ASPログイン・申請リンク集</h1>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-0.5">アフィリエイトチームの日常業務を最大援護する、コクピット導線</p>
-            </div>
-        </div>
-      </header>
+      {/* 👑 全角9文字規則に厳格準拠した共通ヘッダー */}
+      <LinksHeader title="ＡＳＰ・申請リンク" />
 
-      {/* 🛡️ ASPログインエリア：6大ASPを美しいグリッドでマウント */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {aspLinks.map((asp, idx) => (
           <AspCard key={idx} asp={asp} />
         ))}
       </div>
 
-      {/* 🛡️ 社内申請フォームエリア：下部に横長に配置 */}
       <div className="pt-6 border-t border-slate-200 dark:border-slate-800/80">
         <InternalFormCard form={internalForm} />
       </div>
