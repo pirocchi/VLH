@@ -6,7 +6,8 @@ import "./globals.css";
 import { 
   Users, Layers, Crown, Upload, BookOpen, Coins,
   Sun, Moon, Clock, LayoutDashboard, ChevronRight,
-  BarChart2 // 👑 比較・分析センター用のアイコンを新規追加
+  BarChart2,
+  Link2 // 👑 ASPログイン・申請リンク集用のアイコンを新規追加
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,11 +30,12 @@ export default function RootLayout({
   const rawMenuItems = [
     { name: "全体ダッシュボード", path: "/dashboard", icon: LayoutDashboard },
     { name: "パートナー詳細分析", path: "/partners", icon: Users },
-    { name: "比較・分析センター", path: "/compare", icon: BarChart2 }, // 👑 最適な位置に新規設置
+    { name: "比較・分析センター", path: "/compare", icon: BarChart2 },
     { name: "パートナー統合設定", path: "/dictionary", icon: BookOpen },
     { name: "プロバイダ詳細分析", path: "/asp", icon: Layers },
     { name: "特別単価管理・分析", path: "/tokutan", icon: Crown },
     { name: "手動・特殊単価設定", path: "/pricing", icon: Coins },
+    { name: "ASPログイン・申請リンク集", path: "/links", icon: Link2 }, // 👑 最下部へ完全マウント！
   ];
 
   const [menuItems] = useState<any[]>(rawMenuItems);
