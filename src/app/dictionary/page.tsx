@@ -13,7 +13,7 @@ export default function VLHDictionaryPage() {
 
   const [dictionary, setDictionary] = useState<any>({ master_partners: [] });
   const [newMasterName, setNewMasterName] = useState("");
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState<boolean>(true); 
   const [status, setStatus] = useState<{ type: 'success'|'error'|null, msg: string }>({ type: null, msg: "" });
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function VLHDictionaryPage() {
     const updated = {
       ...dictionary,
       master_partners: [
-        { real_name: newMasterName, aliases: [] },
+        { real_name: newMasterName, aliases: [], backlog_issue_key: "" }, // 👑 将来のデータ構造整合性のため空文字で初期化
         ...dictionary.master_partners
       ]
     };
@@ -87,11 +87,10 @@ export default function VLHDictionaryPage() {
     handleSave(updated);
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">パートナー統合設定 展開中...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-indigo-500 font-bold animate-pulse text-lg tracking-widest dark:text-indigo-400">手動紐付けデータ同期中...</div>;
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
-      {/* 👑 メインヘッダーの大粛清・デフォルト回帰 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">パートナー統合設定</h1>
         {status.type && (
@@ -103,7 +102,7 @@ export default function VLHDictionaryPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* 🗺️ 左翼：新規登録カードの大粛清 */}
+        {/* 左翼：新規登録カード */}
         <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl h-fit lg:sticky lg:top-8 shadow-sm transition-all space-y-4">
           <h2 className="text-lg font-black flex items-center gap-2 text-slate-900 dark:text-slate-50">
             <Plus size={20} className="text-indigo-500" /> 新規グループを作成
@@ -141,7 +140,7 @@ export default function VLHDictionaryPage() {
           </div>
         </div>
 
-        {/* 🗺️ 右翼：紐付け設定一覧の大粛清 */}
+        {/* 右翼：紐付け設定一覧 */}
         <div className="lg:col-span-2 space-y-6">
           {dictionary.master_partners.length === 0 ? (
             <div className="p-20 text-center border-4 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-[40px] shadow-sm transition-all">
@@ -177,19 +176,48 @@ export default function VLHDictionaryPage() {
                     ))}
                   </div>
 
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      placeholder="まとめたいASP側のサイト名、またはメディアIDを入力してEnter..."
-                      className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm"
-                      onKeyDown={(e: any) => {
-                        if (e.key === 'Enter') {
-                          addAlias(mIdx, e.target.value);
-                          e.target.value = "";
-                        }
-                      }}
-                    />
+                  {/* 👑 現場第一のUI大覚醒：Backlog課題キー入力欄 ＆ メディア紐付け入力欄を美しい2カラムで並列マウント！ */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 block ml-1">対応Backlog課題キー</label>
+                      <input 
+                        type="text"
+                        placeholder="例：77057-123"
+                        defaultValue={master.backlog_issue_key || ""}
+                        onBlur={(e) => {
+                          const updated = { ...dictionary };
+                          updated.master_partners[mIdx].backlog_issue_key = e.target.value;
+                          setDictionary(updated);
+                          handleSave(updated);
+                        }}
+                        onKeyDown={(e: any) => {
+                          if (e.key === 'Enter') {
+                            const updated = { ...dictionary };
+                            updated.master_partners[mIdx].backlog_issue_key = e.target.value;
+                            setDictionary(updated);
+                            handleSave(updated);
+                            e.target.blur(); // フォーカスを外して確定演出
+                          }
+                        }}
+                        className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 block ml-1">メディア名・サイトIDの追加</label>
+                      <input 
+                        type="text"
+                        placeholder="入力してEnterで追加..."
+                        className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm transition-all"
+                        onKeyDown={(e: any) => {
+                          if (e.key === 'Enter') {
+                            addAlias(mIdx, e.target.value);
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
+
                 </div>
               </div>
             ))
