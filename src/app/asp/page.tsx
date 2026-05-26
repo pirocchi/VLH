@@ -242,7 +242,7 @@ export default function VLHAspPage() {
 
             <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-emerald-500 pl-2 pt-2">■ チャンネル広告運用財務効率</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              <AspKPICard title="広告費(グロス税込)" prefix="￥" value={Math.round(currentAspData.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
+              <AspKPICard title="広告費" prefix="￥" value={Math.round(currentAspData.normalized_gross).toLocaleString()} icon={DollarSign} colorClass="text-red-500 bg-red-500" />
               <AspKPICard title="発生累積売上高" prefix="￥" value={Math.round(currentAspData.revenue).toLocaleString()} icon={ArrowUpRight} colorClass="text-emerald-500 bg-emerald-500" />
               <AspKPICard title="費用対効果（ROAS）" value={currentAspData.roas.toString()} suffix="％" icon={Flame} colorClass="text-yellow-500 bg-yellow-500" />
               <AspKPICard title="CPM" prefix="￥" value={Math.round(currentAspData.cpm).toLocaleString()} icon={BarChart3} colorClass="text-indigo-400 bg-indigo-400" />
@@ -261,7 +261,7 @@ export default function VLHAspPage() {
                     <th className="pb-3 text-right">提携パートナー</th>
                     <th className="pb-3 text-right">クリック数</th>
                     <th className="pb-3 text-right">コンバージョン数</th>
-                    <th className="pb-3 text-right">広告費(グロス税込)</th>
+                    <th className="pb-3 text-right">広告費</th>
                     <th className="pb-3 text-right">ROAS</th>
                     <th className="pb-3 text-right">平均CPA</th>
                     <th className="pb-3 text-center">平均承認率</th>
