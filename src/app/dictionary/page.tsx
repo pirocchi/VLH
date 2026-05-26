@@ -87,7 +87,7 @@ export default function VLHDictionaryPage() {
     handleSave(updated);
   };
 
-  // 👑 カンマ区切りの文字列を分解して、各チケットへの直行URLオブジェクト配列を動的錬成する関数
+  // カンマ区切りの文字列を分解して、各チケットへの直行URLオブジェクト配列を動的錬成する関数
   const parseBacklogKeys = (keysString: string) => {
     if (!keysString) return [];
     return keysString
@@ -151,7 +151,7 @@ export default function VLHDictionaryPage() {
               <div>
                 <p className="text-sm font-black mb-1">システム管理規律</p>
                 <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
-                  ここでお話した「まとめ用の名前」が、パートナー別詳細画面やランキングでの統合表示名となります。
+                  ここで登録した「まとめ用の名前」が、パートナー別詳細画面やランキングでの統合表示名となります。
                 </p>
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function VLHDictionaryPage() {
                       ))}
                     </div>
 
-                    {/* 👑 複数スレッドバッジリンクの動的マウント */}
+                    {/* 複数スレッドバッジリンクの動的マウント */}
                     {linkedIssues.length > 0 && (
                       <div className="flex flex-wrap gap-2 items-center pt-1">
                         <span className="text-[10px] font-black text-slate-400 mr-1">検出スレッド:</span>
@@ -224,21 +224,23 @@ export default function VLHDictionaryPage() {
                     {/* 2カラムフォーム */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 block ml-1">対応Backlog課題キー（複数時はカンマ区切り）</label>
+                        <label className="text-[10px] font-black text-slate-400 block mb-1">対応Backlog課題キー（複数時はカンマ区切り）</label>
                         <input 
                           type="text"
                           placeholder="例：77057-123, 77057-890"
                           defaultValue={master.backlog_issue_key || ""}
                           onBlur={(e) => {
                             const updated = { ...dictionary };
-                            updated.master_partners[masterIdx].backlog_issue_key = e.target.value;
+                            // 👑 【絶対修正】masterIdx を 正しいループインデックス mIdx へ完全大修復！！！
+                            updated.master_partners[mIdx].backlog_issue_key = e.target.value;
                             setDictionary(updated);
                             handleSave(updated);
                           }}
                           onKeyDown={(e: any) => {
                             if (e.key === 'Enter') {
                               const updated = { ...dictionary };
-                              updated.master_partners[masterIdx].backlog_issue_key = e.target.value;
+                              // 👑 【絶対修正】masterIdx を 正しいループインデックス mIdx へ完全大修復！！！
+                              updated.master_partners[mIdx].backlog_issue_key = e.target.value;
                               setDictionary(updated);
                               handleSave(updated);
                               e.target.blur();
@@ -248,14 +250,14 @@ export default function VLHDictionaryPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 block ml-1">メディア名・サイトIDの追加</label>
+                        <label className="text-[10px] font-black text-slate-400 block mb-1">メディア名・サイトIDの追加</label>
                         <input 
                           type="text"
                           placeholder="入力してEnterで追加..."
                           className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm transition-all"
                           onKeyDown={(e: any) => {
                             if (e.key === 'Enter') {
-                              addAlias(masterIdx, e.target.value);
+                              addAlias(mIdx, e.target.value);
                               e.target.value = "";
                             }
                           }}
