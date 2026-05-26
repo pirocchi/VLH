@@ -12,23 +12,22 @@ export const fetchCache = "force-no-store";
 const dictPath = path.join(process.cwd(), "..", "03_Memory", "mimir_dictionary.json");
 const BLOB_FILENAME = "mimir_dictionary.json";
 
-// 辞書データのサルベージ（読み込み）
+// 辞書データのサルベージ（読み込み・兼ローカルへの逆方向自動同期）
 export async function GET() {
   try {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
-    
-    // 隣に「03_Memory」フォルダが物理実在する場合のみローカル環境と判定
     const isLocalEnv = fs.existsSync(path.join(process.cwd(), "..", "03_Memory"));
-    const isCloudEnv = !isLocalEnv;
 
-    // 🌐 クラウド環境、またはローカルPCに物理ファイルが存在しない場合はBlobから最新データをフェッチ
-    if ((isCloudEnv || !fs.existsSync(dictPath)) && token) {
+    // 🌐 トークンが存在する場合、実行環境を問わず、常にクラウド（Blob）上の最新マスタデータを最優先スキャン！！！
+    if (token) {
       const { blobs } = await list({ token });
       const dictBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary"));
 
       if (dictBlobs.length > 0) {
+        // アップロード日時が最も新しいデータを最優先ソート
         dictBlobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
         
+        // Privateファイルへのアクセス権を得て強行突破
         const res = await fetch(dictBlobs[0].url, {
           cache: "no-store",
           headers: {
@@ -37,13 +36,25 @@ export async function GET() {
         });
         
         if (res.ok) {
-          const data = await res.json();
-          return NextResponse.json(data);
+          const cloudData = await res.json();
+          
+          // 👑 【第3戦区・逆方向自動同期の覚醒】
+          // ローカルPC環境での実行であれば、クラウドから吸い上げた最新の神データを、
+          // その場で社内PCの物理ディスク（03_Memory）へ100%完全自動で上書き保存（ミラーバック）を執行！！！
+          if (isLocalEnv) {
+            const dirname = path.dirname(dictPath);
+            if (!fs.existsSync(dirname)) {
+              fs.mkdirSync(dirname, { recursive: true });
+            }
+            fs.writeFileSync(dictPath, JSON.stringify(cloudData, null, 2), "utf-8");
+          }
+          
+          return NextResponse.json(cloudData);
         }
       }
     }
 
-    // 🏠 ローカル環境：社内PC内の物理ディスクを安全スキャン
+    // 🏠 フォールバック：Blobストアが空、またはオフライン通信障害時のみ、ローカルの物理ディスクデータをスキャン
     if (fs.existsSync(dictPath)) {
       const data = fs.readFileSync(dictPath, "utf-8");
       return NextResponse.json(JSON.parse(data));
@@ -52,6 +63,11 @@ export async function GET() {
     return NextResponse.json({ master_partners: [] });
   } catch (error) {
     console.error("🚨 Dictionary GET Error:", error);
+    // 🛡️ 最深部防衛：万が一通信が一時遮断されても、ローカルPC内の既存ファイルを最終防衛ラインとして返却
+    if (fs.existsSync(dictPath)) {
+      const data = fs.readFileSync(dictPath, "utf-8");
+      return NextResponse.json(JSON.parse(data));
+    }
     return NextResponse.json({ master_partners: [] });
   }
 }
@@ -74,7 +90,7 @@ export async function POST(request: Request) {
       fs.writeFileSync(dictPath, jsonString, "utf-8");
     }
 
-    // 🌐 2. トークンが実在する場合、実行環境（ローカル/クラウド）を問わず本番Blobストレージへ常時二重ミラーリング保存！！！
+    // 🌐 2. トークンが実在する場合、実行環境を問わず本番Blobストレージへ常時二重ミラーリング保存
     if (token) {
       const blob = await put(BLOB_FILENAME, jsonString, {
         access: "private", 
@@ -83,7 +99,6 @@ export async function POST(request: Request) {
         token
       });
 
-      // 過去の乱数付き残骸ファイルをバックグラウンドで一斉掃討
       try {
         const { blobs } = await list({ token });
         const oldBlobs = blobs.filter(b => b.pathname.startsWith("mimir_dictionary") && b.url !== blob.url);
