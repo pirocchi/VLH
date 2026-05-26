@@ -54,7 +54,7 @@ export default function VLHComparePage() {
   const [compareB, setCompareB] = useState<string>("");
 
   const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const [aiAdvice, setAiAdvice] = useState<string>("比較対象の2社を指定し、『分析を開始する』ボタンを押してください。獲得規模、広告費用（グロス）、メディア報酬（ネット）のバランスをクロス解析し、掲載条件の適正化やプロモーション交渉に直結する具体的な調整方針を提示します。");
+  const [aiAdvice, setAiAdvice] = useState<string>("比較対象の2社を指定し、『分析を開始する』ボタンを押してください。獲得規模、広告費用（グロス）、メディア報酬額（ネット）のバランスをクロス解析し、掲載条件の適正化やプロモーション交渉に直結する具体的な調整方針を提示します。");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -233,10 +233,10 @@ export default function VLHComparePage() {
   // 👑 【2コンポーネント完全均等化モデル】成果数と、財務データを分離エクスポート
   const singleChartDataCV = useMemo(() => [{ category: "成果数（件）", [compareA]: metricsA.cv, [compareB]: metricsB.cv }], [compareA, compareB, metricsA]);
   
-  // 👑 誤字「ディア」を完全消滅修復！！！一字一句違わず「メディア報酬（ネット）」へ完治！！！
+  // 👑 誤字「ディア」を完全消滅修復！！！一字一句違わず「報酬額（ネット）」へ完治！！！
   const chartDataFinancial = useMemo(() => [
     { category: "広告費（グロス）", [compareA]: Math.round(metricsA.gross), [compareB]: Math.round(metricsB.gross) },
-    { category: "メディア報酬（ネット）", [compareA]: Math.round(metricsA.net), [compareB]: Math.round(metricsB.net) }
+    { category: "報酬額（ネット）", [compareA]: Math.round(metricsA.net), [compareB]: Math.round(metricsB.net) }
   ], [compareA, compareB, metricsA, metricsB]);
 
   const handleAiCompare = async () => {
