@@ -6,7 +6,7 @@ import {
   BarChart2, TrendingUp, Search, Calendar, Users, 
   ArrowUpRight, ArrowDownRight, Layers, Flame, Target, Info, BrainCircuit
 } from "lucide-react";
-// 👑 成果（Line）と広告費（Bar）を美しく融合させる ComposedChart を完全召喚！
+// 👑 ハイブリッド混合グラフ用の ComposedChart を完全駆動！
 import { 
   ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, BarChart 
@@ -176,7 +176,7 @@ export default function VLHComparePage() {
     return { totalCV, activePartners, avgCPA };
   }, [performanceData]);
 
-  // 日別推移データの集計
+  // 日別推移集計
   const trendAnalysis = useMemo(() => {
     const now = new Date();
     const curYear = now.getFullYear();
@@ -230,27 +230,24 @@ export default function VLHComparePage() {
     return { cv: partnerBDetails.cv, gross: partnerBDetails.normalized_gross, net: partnerBDetails.partnerProfit };
   }, [partnerBDetails]);
 
-  // 👑 【一石三鳥の大統合】3つの指標を1つのデータ配列に完全集約！！！
-  // これにより、縦のマージンは100%完全等間隔になり、X軸とのベタ付きも永久消滅します！！！
-  const battleMetrics = useMemo(() => [
-    { category: "成果数（件）", valA: metricsA.cv, valB: metricsB.cv },
-    { category: "広告費（グロス）", valA: Math.round(metricsA.gross), valB: Math.round(metricsB.gross) },
-    { category: "メディア報酬（ネット）", valA: Math.round(metricsA.net), valB: Math.round(metricsB.net) } // 👑 誤字「ディア」を完全抹殺修復！！！
-  ], [metricsA, metricsB]);
+  // 👑 【2コンポーネント完全均等化モデル】成果数と、財務データを分離エクスポート
+  const singleChartDataCV = useMemo(() => [{ category: "成果数（件）", [compareA]: metricsA.cv, [compareB]: metricsB.cv }], [compareA, compareB, metricsA]);
+  
+  // 👑 誤字「ディア」を完全消滅修復！！！一字一句違わず「メディア報酬（ネット）」へ完治！！！
+  const chartDataFinancial = useMemo(() => [
+    { category: "広告費（グロス）", [compareA]: Math.round(metricsA.gross), [compareB]: Math.round(metricsB.gross) },
+    { category: "メディア報酬（ネット）", [compareA]: Math.round(metricsA.net), [compareB]: Math.round(metricsB.net) }
+  ], [compareA, compareB, metricsA, metricsB]);
 
-  // 👑 比較画面専用の独立したAIロジック
   const handleAiCompare = async () => {
     try {
       setAiLoading(true);
       setAiAdvice("");
-      const res = await fetch("/api/ai/compare", { // 👑 流用を完全にやめ、専用ルートへ射出！
+      const res = await fetch("/api/ai/compare", { // 👑 専用バックエンドAPIへ射出直結！！！
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ partnerA: compareA, partnerB: compareB, metrics: { metricsA, metricsB } })
       });
-      
-      const data = res.ok ? await res.json() : { 
-        advice: `${compareA} と ${compareB} の当月パフォーマンスを厳密に比較検証しました。獲得件数に対するCPA（費用対効果）のバランスを精査した結果、プロモーションの投資効率に明らかな格差が認められます。このファクトをベースに、効率の優良な提携先へのリソース集中、あるいは掲載位置のさらなる格上げ交渉を進めてください。交渉の際は、日本国内累計出荷実績130万台突破という圧倒的な市場シェア、およびプラットフォームを問わず寄せられているユーザーからの「圧倒的な口コミ」や「絶賛の声」という強力なファクトを前面に押し出し、アローエイト様のプロモーション優位性を強くアピールした条件調整を展開することを強く推奨します。` 
-      };
+      const data = await res.json();
       setAiAdvice(data.advice);
     } catch (err) {
       setAiAdvice("⚠️ 分析処理中にエラーが発生しました。");
@@ -274,7 +271,7 @@ export default function VLHComparePage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* 👑 成果＝折れ線（Line）、広告費＝棒グラフ（Bar）のハイブリッドComposedChart！ */}
+        {/* 日別推移ハイブリッドComposedChart */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
           <div className="flex justify-between items-start border-l-4 border-indigo-500 pl-4">
             <div>
@@ -292,7 +289,6 @@ export default function VLHComparePage() {
                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
                 <YAxis yAxisId="left" stroke="#6366f1" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
                 <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} tickFormatter={(v) => `￥${v.toLocaleString()}`} />
-                {/* マウスオーバー時に完璧な単位とカンマを刻印するTooltip */}
                 <Tooltip 
                   contentStyle={{ backgroundColor: isLight ? "#fff" : "#0f172a", borderRadius: "12px", border: "none", boxShadow: "0 10px 15px rgba(0,0,0,0.1)", fontWeight: "bold", fontSize: "11px" }} 
                   formatter={(value: any, name: any) => {
@@ -302,10 +298,8 @@ export default function VLHComparePage() {
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "20px" }} />
-                {/* 広告費はダイナミックな棒グラフ（Bar）へ進化！ */}
-                <Bar yAxisId="right" name="今月の広告費" dataKey="thisMonthGross" fill="#f59e0b" fillOpacity={0.15} stroke="#f59e0b" strokeWidth={1} barSize={16} />
-                <Bar yAxisId="right" name="前月の広告費" dataKey="lastMonthGross" fill="#94a3b8" fillOpacity={0.05} stroke="#cbd5e1" strokeWidth={1} strokeDasharray="2 2" barSize={16} />
-                {/* 成果数は美しき軌跡を描く折れ線（Line）へ進化！ */}
+                <Bar yAxisId="right" name="今月の広告費" dataKey="thisMonthGross" fill="#f59e0b" fillOpacity={0.12} stroke="#f59e0b" strokeWidth={1} barSize={16} />
+                <Bar yAxisId="right" name="前月の広告費" dataKey="lastMonthGross" fill="#94a3b8" fillOpacity={0.03} stroke="#cbd5e1" strokeWidth={1} strokeDasharray="2 2" barSize={16} />
                 <Line yAxisId="left" name="今月の成果数" type="monotone" dataKey="thisMonth" stroke="#6366f1" strokeWidth={3.5} dot={false} />
                 <Line yAxisId="left" name="前月の成果数" type="monotone" dataKey="lastMonth" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
               </ComposedChart>
@@ -313,7 +307,7 @@ export default function VLHComparePage() {
           </div>
         </div>
 
-        {/* パートナー別 報酬・成果比較（完全1択大統合モデル） */}
+        {/* パートナー別 報酬・成果比較（2コンポーネント完全均等化モデル） */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
           <div className="flex justify-between items-center border-l-4 border-amber-500 pl-4">
             <div>
@@ -368,29 +362,36 @@ export default function VLHComparePage() {
             </div>
           </div>
 
-          {/* 👑 指標統合型BarChart：一糸乱れぬ100%等間隔マージン ＆ X軸ベタ付き完全消滅！！！ */}
-          <div className="w-full h-64 pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={battleMetrics} layout="vertical" margin={{ left: -10, right: 30, top: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#f1f5f9" : "#1e293b"} horizontal={false} />
-                {/* 👑 一番下にハッキリとX軸を出現させ、ベタ付きを完全阻止！ */}
-                <XAxis type="number" stroke="#94a3b8" fontSize={9} fontWeight="bold" tickFormatter={(v) => v.toLocaleString()} axisLine={true} />
-                <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={120} />
-                {/* 👑 マウスオーバー時に「件」「￥」「カンマ」を完全動的判定して付与する絶対Tooltip！ */}
-                <Tooltip 
-                  cursor={{ fill: 'transparent' }} 
-                  contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px", boxShadow: "0 10px 15px rgba(0,0,0,0.1)" }} 
-                  formatter={(val: any, name: any, props: any) => {
-                    const isCV = props.payload.category.includes("成果");
-                    const formatted = Number(val).toLocaleString();
-                    return [isCV ? `${formatted} 件` : `￥${formatted}`, name];
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "12px" }} />
-                <Bar name={compareA || "対象A"} dataKey="valA" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
-                <Bar name={compareB || "対象B"} dataKey="valB" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* 👑 【2コンポーネント完全均等化モデル】 */}
+          {/* 件数と金額のコンポーネントを完全に2つに分離させ、マージン・パディング・横軸幅（width={120}）を一卵性双生児レベルで完全同期！！！ */}
+          <div className="space-y-2 pt-2">
+            {/* 1. 成果数グラフ（独立スケールで100%大復活！） */}
+            <div className="h-20 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={singleChartDataCV} layout="vertical" margin={{ left: -10, right: 30, top: 10, bottom: 10 }}>
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={120} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px" }} formatter={(val: any, name: any) => [`${Number(val).toLocaleString()} 件`, name]} />
+                  <Bar name={compareA || "対象A"} dataKey={compareA} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar name={compareB || "対象B"} dataKey={compareB} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 2. 金額グラフ（広告費 ＋ メディア報酬。1つのコンポーネントなのでマージンは完全一糸乱れぬ等間隔になり、X軸との余白もハッキリ確保！） */}
+            <div className="h-44 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartDataFinancial} layout="vertical" margin={{ left: -10, right: 30, top: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#f1f5f9" : "#1e293b"} horizontal={false} />
+                  <XAxis type="number" stroke="#94a3b8" fontSize={9} fontWeight="bold" tickFormatter={(v) => v.toLocaleString()} axisLine={true} />
+                  <YAxis dataKey="category" type="category" stroke="#94a3b8" fontSize={10} fontWeight="black" axisLine={false} tickLine={false} width={120} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: "12px", border: "none", fontWeight: "bold", fontSize: "11px", boxShadow: "0 10px 15px rgba(0,0,0,0.1)" }} formatter={(val: any, name: any) => [`￥${Number(val).toLocaleString()}`, name]} />
+                  <Legend wrapperStyle={{ fontSize: "11px", fontWeight: "black", paddingTop: "12px" }} />
+                  <Bar name={compareA || "対象A"} dataKey={compareA} fill="#6366f1" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar name={compareB || "対象B"} dataKey={compareB} fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -413,7 +414,6 @@ export default function VLHComparePage() {
         </div>
         {aiAdvice && (
           <div className="bg-white/10 border border-white/20 p-6 rounded-xl animate-in fade-in duration-500">
-            {/* 👑 不要なイタリックを完全パージし、厳格な立体フォントへ！ */}
             <p className="text-sm md:text-base leading-relaxed font-bold text-white">「 {aiAdvice} 」</p>
           </div>
         )}
