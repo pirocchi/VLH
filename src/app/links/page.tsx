@@ -111,17 +111,17 @@ const InternalFormCard = ({ form }: any) => (
 export default function VLHLinksPage() {
   // 👑 タイトル文字の適正化モデル（afb / felmat / QUORIZa へ完全修正）
   const aspLinks = [
-    { name: "A8.net", description: "国内最大級。キャンペーン情報の確認やレポートの精査に。", copyId: "arrow8-a8", loginUrl: "#" },
-    { name: "もしもアフィリエイト", description: "かんたんリンク等の管理、プロモーションの進捗確認に。", copyId: "moshimo-a8", loginUrl: "#" },
-    { name: "afb", description: "報酬支払いサイクルや担当者との連携管理に。", copyId: "afb-arrow8", loginUrl: "#" },
-    { name: "AccessTrade", description: "金融・Eコマース系に強い。安定した運用の確認に。", copyId: "at-arrow8", loginUrl: "#" },
-    { name: "felmat", description: "クローズドASPならではの密な連携、特別単価の調整に。", copyId: "arrow8eight", loginUrl: "#" },
-    { name: "QUORIZa", description: "最新のアフィリエイト機能、独自指標のモニタリングに。", copyId: "qz-arrow8", loginUrl: "#" },
+    { name: "A8.net", description: "国内最大級。キャンペーン情報の確認やレポートの精査に。", copyId: "s00000010841001", loginUrl: "https://www.a8.net" },
+    { name: "もしもアフィリエイト", description: "かんたんリンク等の管理、プロモーションの進捗確認に。", copyId: "sales-promotion@mrock-group.com", loginUrl: "https://secure.moshimo.com/af/merchant/login2" },
+    { name: "afb", description: "報酬支払いサイクルや担当者との連携管理に。", copyId: "UV6Fg8KW", loginUrl: "https://www.afi-b.com" },
+    { name: "AccessTrade", description: "金融・Eコマース系に強い。安定した運用の確認に。", copyId: "1001", loginUrl: "https://www.accesstrade.ne.jp" },
+    { name: "felmat", description: "クローズドASPならではの密な連携、特別単価の調整に。", copyId: "arrow8eight", loginUrl: "https://www.felmat.net/advertiser/login" },
+    { name: "QUORIZa", description: "最新のアフィリエイト機能、独自指標のモニタリングに。", copyId: "huAe5I75", loginUrl: "https://quoriza.net/client/login" },
   ];
 
   const internalForm = {
-    name: "特別単価申請フォーム（社内用）",
-    url: "#"
+    name: "特別単価申請フォーム",
+    url: "https://mgs-secure.com/aff"
   };
 
   return (
