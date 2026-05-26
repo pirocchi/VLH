@@ -113,10 +113,10 @@ export default function VLHTokutanPage() {
 
       const count = row.issued_count || 0;
       
-      if (count > 0) {
-        const unitGross = (row.normalized_gross || 0) / count; 
-        map[finalName].aspUnitCosts.push({ asp, unitGross });
-      }
+      // 👑 【絶対修正】JavaScriptの正しいコメント「//」へ大修復！！！
+      // ブリュンヒルドが確定出力した1件あたりの生単価（unit_gross）を、成果0件だろうが100%そのまま配列に装填！
+      const staticUnitGross = row.unit_gross || 16500;
+      map[finalName].aspUnitCosts.push({ asp, unitGross: staticUnitGross });
 
       if (row.date) {
         const dateStr = String(row.date);
@@ -139,7 +139,6 @@ export default function VLHTokutanPage() {
       let detectedLevel = null;
       let isSpecial = false;
 
-      // 👑 修正：0件（単価履歴なし）の場合は、強制的に Lv.1（通常）とする！
       if (p.aspUnitCosts.length > 0) {
         const target = p.aspUnitCosts[p.aspUnitCosts.length - 1];
         const unitGross = target.unitGross;
@@ -147,7 +146,7 @@ export default function VLHTokutanPage() {
         if (target.asp === "QUORIZa") {
           isSpecial = true;
         } else {
-          const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 60);
+          const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 10);
 
           if (found) {
             detectedLevel = found.level;
@@ -156,7 +155,7 @@ export default function VLHTokutanPage() {
           }
         }
       } else {
-        detectedLevel = 1; // 👑 修正：ここが "isSpecial = true" になっていたのをLv1に変更！
+        detectedLevel = 1; 
       }
 
       const currentTier = isSpecial || !detectedLevel
@@ -276,7 +275,7 @@ export default function VLHTokutanPage() {
                       {partner.isSpecial ? "特殊" : `Lv.${partner.currentTier.level}`}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold opacity-80">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-[10px] opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">当月成果: {partner.cv} 件</span>
                     <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}><span className="text-[9px] text-slate-400 mr-0.5">￥</span>{Math.round(partner.totalRevenue).toLocaleString()}</span>
                   </div>
