@@ -2,31 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// 最高司令官より拝受した絶対の兵站接続情報
+// 👑 最高司令官より拝受した絶対の兵站接続情報
 const BACKLOG_SPACE = "mkg.backlog.com";
 const BACKLOG_API_KEY = "vH6W9K7rRIA8FOfehQTXLzqNlkzmRjxhvmjCwFxQDCyPyz2g7ZtPB5RqE83Ffygh";
 
 /**
- * 💬 POST: VLHの画面から課題キーと戦況データを受け取り、既存のパートナー専用スレッドへ自動コメント投稿
+ * 💬 POST: カンマ区切りの複数キーから「最新のキー」を自動選定し、既存スレッドのコメント欄へ自動投稿
  */
 export async function POST(req: NextRequest) {
   try {
     const { backlogIssueKey, partnerName, actionType, currentTier, cv, gross, net } = await req.json();
 
-    // 🛡️ 防衛バリデーション：課題キーが紐付いていない場合は即リターン
-    if (!backlogIssueKey) {
+    if (!backlogIssueKey || !backlogIssueKey.trim()) {
       return NextResponse.json({ 
         success: false, 
         error: "このパートナーにはBacklogの課題キーが紐付けられていません。マスタ設定から登録してください。" 
       }, { status: 400 });
     }
 
+    // 🛡️ 複数キー自動調停ロジック：カンマ区切り文字列を分解・トリミングし、空文字を除外
+    const keysArray = backlogIssueKey
+      .split(",")
+      .map((k: string) => k.trim())
+      .filter((k: string) => k !== "");
+
+    if (keysArray.length === 0) {
+      return NextResponse.json({ success: false, error: "有効なBacklog課題キーが検出されませんでした。" }, { status: 400 });
+    }
+
+    // 🎯 スタック最上部（配列の最後）のキーを「現行の最新スレッド」として完全ロックオン！！！
+    const targetLatestKey = keysArray[keysArray.length - 1];
+
     const baseUrl = `https://${BACKLOG_SPACE}/api/v2`;
-    
-    // トリガー内容に応じた日本語テキストの自動調停（横文字・厨二病の完全パージ）
     const eventName = actionType === "pricing" ? "特別単価の変更・適用" : "掲載位置の格上げ・露出拡大交渉";
     
-    // 👑 福本様たちがスレッドを見た瞬間に戦況が1秒でわかる、カンマ・単位付きのクリーンな業務報告テキスト
+    // 👑 現場の皆様がひと目で戦況を把握できるクリーンな実数値テキスト
     const commentContent = `【VLH（特別単価判定管理システム）連動通知】
 
 システムより、当月の成果状況に基づいた以下のデータ連動およびアクションが推奨されました。
@@ -44,11 +54,11 @@ export async function POST(req: NextRequest) {
 
 本件に関するASPやパートナーとの交渉経緯・進捗は、引き続き本スレッドのコメント欄にて管理・共有をお願いいたします。`;
 
-    // Backlog API v2 課題コメントの追加（POST /api/v2/issues/{issueIdOrKey}/comments）
     const params = new URLSearchParams();
     params.append("content", commentContent);
 
-    const commentUrl = `${baseUrl}/issues/${backlogIssueKey}/comments?apiKey=${BACKLOG_API_KEY}`;
+    // 最新スレッドのエンドポイントへ射出！！！
+    const commentUrl = `${baseUrl}/issues/${targetLatestKey}/comments?apiKey=${BACKLOG_API_KEY}`;
     const response = await fetch(commentUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -57,16 +67,16 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errText = await response.text();
-      return NextResponse.json({ success: false, error: `Backlogへのコメント投稿に失敗: ${errText}` }, { status: 500 });
+      return NextResponse.json({ success: false, error: `Backlogへのコメント投稿に失敗しました（対象キー: ${targetLatestKey}）: ${errText}` }, { status: 500 });
     }
 
-    // パートナーのBacklogスレッドURLを動的生成
-    const issueUrl = `https://${BACKLOG_SPACE}/view/${backlogIssueKey}`;
+    const issueUrl = `https://${BACKLOG_SPACE}/view/${targetLatestKey}`;
 
     return NextResponse.json({ 
       success: true, 
-      issueKey: backlogIssueKey,
-      issueUrl: issueUrl
+      issueKey: targetLatestKey,
+      issueUrl: issueUrl,
+      isMultiple: keysArray.length > 1
     });
 
   } catch (err: any) {
