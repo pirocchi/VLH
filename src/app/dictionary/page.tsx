@@ -4,8 +4,18 @@ import React, { useState, useEffect, useContext } from "react";
 import { ThemeContext } from "../layout";
 import { 
   BookOpen, Plus, Trash2, Save, Search, 
-  ShieldCheck, AlertCircle, Info, ExternalLink
+  ShieldCheck, AlertCircle, Info, ExternalLink, Link2
 } from "lucide-react";
+
+// 👑 横文字を完全パージした業務用日本語の集客経路マスター定義
+const TRAFFIC_SOURCES = [
+  { value: "ブログ（SERP）", label: "ブログ（SERP）" },
+  { value: "YouTube",         label: "YouTube" },
+  { value: "Instagram",       label: "Instagram" },
+  { value: "TikTok",          label: "TikTok" },
+  { value: "X（旧Twitter）",  label: "X（旧Twitter）" },
+  { value: "その他",          label: "その他" }
+];
 
 export default function VLHDictionaryPage() {
   const { activeTheme } = useContext(ThemeContext);
@@ -55,12 +65,13 @@ export default function VLHDictionaryPage() {
     const updated = {
       ...dictionary,
       master_partners: [
-        { real_name: newMasterName, aliases: [], backlog_issue_key: "" },
+        // 👑 新たなる戦略フィールドである集客経路とURLの初期値を100%安全にマウント
+        { real_name: newMasterName, aliases: [], backlog_issue_key: "", traffic_source: "", traffic_source_url: "" },
         ...dictionary.master_partners
       ]
     };
     setDictionary(updated);
-    setNewMasterName("");
+    newMasterName ? setNewMasterName("") : null;
     handleSave(updated);
   };
 
@@ -87,7 +98,6 @@ export default function VLHDictionaryPage() {
     handleSave(updated);
   };
 
-  // カンマ区切りの文字列を分解して、各チケットへの直行URLオブジェクト配列を動的錬成する関数
   const parseBacklogKeys = (keysString: string) => {
     if (!keysString) return [];
     return keysString
@@ -109,6 +119,7 @@ export default function VLHDictionaryPage() {
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
+      {/* 👑 規律に則り、全角9文字の「パートナー統合設定」タイトルを完全維持 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">パートナー統合設定</h1>
         {status.type && (
@@ -221,7 +232,7 @@ export default function VLHDictionaryPage() {
                       </div>
                     )}
 
-                    {/* 2カラムフォーム */}
+                    {/* 1カラム目（既存）：Backlog課題キー ＆ メディア名追加 */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 block mb-1">対応Backlog課題キー（複数時はカンマ区切り）</label>
@@ -231,7 +242,6 @@ export default function VLHDictionaryPage() {
                           defaultValue={master.backlog_issue_key || ""}
                           onBlur={(e) => {
                             const updated = { ...dictionary };
-                            // 👑 【絶対修正】masterIdx を 正しいループインデックス mIdx へ完全大修復！！！
                             updated.master_partners[mIdx].backlog_issue_key = e.target.value;
                             setDictionary(updated);
                             handleSave(updated);
@@ -239,7 +249,6 @@ export default function VLHDictionaryPage() {
                           onKeyDown={(e: any) => {
                             if (e.key === 'Enter') {
                               const updated = { ...dictionary };
-                              // 👑 【絶対修正】masterIdx を 正しいループインデックス mIdx へ完全大修復！！！
                               updated.master_partners[mIdx].backlog_issue_key = e.target.value;
                               setDictionary(updated);
                               handleSave(updated);
@@ -262,6 +271,67 @@ export default function VLHDictionaryPage() {
                             }
                           }}
                         />
+                      </div>
+                    </div>
+
+                    {/* 👑 2カラム目（新規マウント）：集客経路ドロップダウン ＆ 個別URLリンク入力 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 block mb-1">集客経路カテゴリの指定</label>
+                        <select
+                          value={master.traffic_source || ""}
+                          onChange={(e) => {
+                            const updated = { ...dictionary };
+                            updated.master_partners[mIdx].traffic_source = e.target.value;
+                            setDictionary(updated);
+                            handleSave(updated);
+                          }}
+                          className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 font-bold text-sm transition-all"
+                        >
+                          <option value="">-- 未選択（指定なし） --</option>
+                          {TRAFFIC_SOURCES.map(source => (
+                            <option key={source.value} value={source.value}>{source.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 block mb-1">個別URLリンクの紐付け</label>
+                        <div className="relative flex items-center">
+                          <input 
+                            type="text"
+                            placeholder="例：https://instagram.com/real_name"
+                            defaultValue={master.traffic_source_url || ""}
+                            onBlur={(e) => {
+                              const updated = { ...dictionary };
+                              updated.master_partners[mIdx].traffic_source_url = e.target.value;
+                              setDictionary(updated);
+                              handleSave(updated);
+                            }}
+                            onKeyDown={(e: any) => {
+                              if (e.key === 'Enter') {
+                                const updated = { ...dictionary };
+                                updated.master_partners[mIdx].traffic_source_url = e.target.value;
+                                setDictionary(updated);
+                                handleSave(updated);
+                                e.target.blur();
+                              }
+                            }}
+                            className="w-full px-4 py-3 pr-12 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm transition-all"
+                          />
+                          {/* 👑 登録URLがある場合のみ、1秒で直行できるジャンプボタンを綺麗にマウント */}
+                          {master.traffic_source_url && (
+                            <a 
+                              href={master.traffic_source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="登録URLへ直接移動する"
+                              className="absolute right-3 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-indigo-400 transition-all shadow-sm"
+                            >
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
 
