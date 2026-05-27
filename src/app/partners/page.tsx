@@ -5,8 +5,52 @@ import { ThemeContext } from "../layout";
 import { 
   Users, Eye, MousePointer, Percent, ShoppingBag, TrendingUp,
   DollarSign, ArrowUpRight, Flame, Target, Coins, BarChart3,
-  Search, ShieldAlert, Layers, Filter
+  Search, ShieldAlert, Layers, Filter, Crown, Route, ExternalLink
 } from "lucide-react";
+
+// 👑 マスタ画面と完全同期した、アローエイト様準拠の集客経路マスター配列
+const TRAFFIC_SOURCES = [
+  { value: "ウェブサイト（SERP）", label: "ウェブサイト（SERP）" },
+  { value: "検索広告（SERP）",     label: "検索広告（SERP）" },
+  { value: "ディスプレイ広告",     label: "ディスプレイ広告" },
+  { value: "ネイティブ広告",       label: "ネイティブ広告" },
+  { value: "アプリ",               label: "アプリ" },
+  { value: "YouTube",              label: "YouTube" },
+  { value: "Facebook",             label: "Facebook" },
+  { value: "Instagram",            label: "Instagram" },
+  { value: "TikTok",               label: "TikTok" },
+  { value: "X（旧Twitter）",       label: "X（旧Twitter）" },
+  { value: "LINE",                 label: "LINE" },
+  { value: "Pinterest",            label: "Pinterest" },
+  { value: "ライブコマース",       label: "ライブコマース" },
+  { value: "その他",               label: "その他" }
+];
+
+const TOKUTAN_MASTER_TABLE = [
+  { level: 1, name: "レベル1（通常）", minCV: 0,   maxCV: 10,   gross: 16500, net: 13200 },
+  { level: 2, name: "レベル2",        minCV: 11,  maxCV: 20,   gross: 17600, net: 14300 },
+  { level: 3, name: "レベル3",        minCV: 21,  maxCV: 30,   gross: 19250, net: 15400 },
+  { level: 4, name: "レベル4",        minCV: 31,  maxCV: 50,   gross: 20900, net: 16500 },
+  { level: 5, name: "レベル5",        minCV: 51,  maxCV: 100,  gross: 22550, net: 17600 },
+  { level: 6, name: "レベル6",        minCV: 101, maxCV: 200,  gross: 24200, net: 19800 },
+  { level: 7, name: "レベル7",        minCV: 201, maxCV: 300,  gross: 25850, net: 22000 },
+  { level: 8, name: "レベル8（上限）", minCV: 301, maxCV: 9999, gross: 29150, net: 24200 },
+];
+
+const getLevelBadgeClass = (level: number, isSpecial: boolean) => {
+  if (isSpecial) return "bg-purple-600 text-white font-black shadow-sm shadow-purple-500/10";
+  switch (level) {
+    case 1: return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/40";
+    case 2: return "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300";
+    case 3: return "bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300";
+    case 4: return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300";
+    case 5: return "bg-yellow-50 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400";
+    case 6: return "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400";
+    case 7: return "bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-400";
+    case 8: return "bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/10";
+    default: return "bg-slate-100 text-slate-700";
+  }
+};
 
 const PartnerKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
@@ -35,6 +79,9 @@ export default function VLHPartnersPage() {
 
   const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
+  const [selectedLevel, setSelectedLevel] = useState<string>("all"); // 👑 レベルフィルター追加
+  const [selectedSource, setSelectedSource] = useState<string>("all"); // 👑 経路フィルター追加
+  
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
   useEffect(() => {
@@ -44,7 +91,7 @@ export default function VLHPartnersPage() {
         const perfRes = await fetch("/api/performance", { cache: "no-store" });
         const perfData = perfRes.ok ? await perfRes.json() : [];
         
-        const dictRes = await fetch("/api/dictionary", { cache: "no-store" });
+        const dictRes = await fetch(`/api/dictionary?t=${Date.now()}`, { cache: "no-store" });
         const dictionary = dictRes.ok ? await dictRes.json() : { master_partners: [] };
 
         setPerformanceData(perfData);
@@ -89,7 +136,6 @@ export default function VLHPartnersPage() {
         case "custom":
           if (!customRange.start || !customRange.end) return true;
           const startLimit = getStartOfDay(new Date(customRange.start)).getTime();
-          // 👑 修正：終了日を「その日の23時59分59秒999ミリ秒」に強制拡張！！！
           const endLimit = getStartOfDay(new Date(customRange.end)).getTime() + (24 * 60 * 60 * 1000) - 1;
           return rowTime >= startLimit && rowTime <= endLimit;
         case "all":
@@ -121,17 +167,27 @@ export default function VLHPartnersPage() {
           name: finalName,
           ids: new Set<string>(),
           impressions: 0, clicks: 0, issued_count: 0,
-          normalized_gross: 0, normalized_net: 0, asps: {}
+          normalized_gross: 0, normalized_net: 0, asps: {},
+          detectedUnitGross: 0, detectedAsp: "", hasValidUnit: false,
+          trafficSource: match?.traffic_source || "未設定", // 👑 経路情報マウント
+          trafficSourceUrl: match?.traffic_source_url || "" 
         };
       }
 
-      // 👑 修正：API側で付与された絶対ファクト（正規化値）をそのまま合算！
       map[finalName].ids.add(rawId);
       map[finalName].impressions += (row.impressions || 0);
       map[finalName].clicks += (row.clicks || 0);
       map[finalName].issued_count += (row.issued_count || 0);
       map[finalName].normalized_gross += (row.normalized_gross || 0);
       map[finalName].normalized_net += (row.normalized_net || 0);
+
+      const count = row.issued_count || 0;
+      const staticUnitGross = row.unit_gross || 16500;
+      if (count > 0 || !map[finalName].hasValidUnit) {
+        map[finalName].detectedUnitGross = staticUnitGross;
+        map[finalName].detectedAsp = asp;
+        if (count > 0) map[finalName].hasValidUnit = true;
+      }
 
       if (!map[finalName].asps[asp]) {
         map[finalName].asps[asp] = { impressions: 0, clicks: 0, issued_count: 0, normalized_gross: 0, normalized_net: 0 };
@@ -146,8 +202,33 @@ export default function VLHPartnersPage() {
     return Object.values(map).map((p: any) => {
       const rev = p.issued_count * 79800; 
       const cost = p.normalized_gross; 
+
+      // 👑 特単レベルも算出・マウント（フィルターとUI表示用）
+      let detectedLevel = null;
+      let isSpecial = false;
+      if (p.detectedUnitGross > 0) {
+        const unitGross = p.detectedUnitGross;
+        if (p.detectedAsp === "QUORIZa") {
+          isSpecial = true;
+        } else {
+          const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 10);
+          if (found) {
+            detectedLevel = found.level;
+          } else {
+            isSpecial = true; 
+          }
+        }
+      } else {
+        detectedLevel = 1; 
+      }
+
+      const currentTier = isSpecial || !detectedLevel
+        ? { level: 99, name: "特殊（個別契約） / 判定不能", gross: 0, net: 0, minCV: 0, maxCV: 0 }
+        : TOKUTAN_MASTER_TABLE.find(t => t.level === detectedLevel) || TOKUTAN_MASTER_TABLE[0];
+
       return {
         ...p,
+        currentTier, isSpecial,
         idList: Array.from(p.ids).join(", "),
         revenue: rev,
         ctr: p.impressions > 0 ? parseFloat(((p.clicks / p.impressions) * 100).toFixed(2)) : 0.0,
@@ -160,14 +241,26 @@ export default function VLHPartnersPage() {
     }).sort((a: any, b: any) => b.revenue - a.revenue);
   }, [baseFilteredData, dictData]);
 
+  // 👑 新たなる3カラムクロスフィルターを完全配線！
   const searchedPartners = useMemo(() => {
     return partnersAggregated.filter(p => {
       const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || 
                           p.idList.toLowerCase().includes(searchWord.toLowerCase());
       const matchesPageAsp = selectedAsp === "all" || Object.keys(p.asps).includes(selectedAsp);
-      return matchesWord && matchesPageAsp;
+      const matchesSource = selectedSource === "all" || p.trafficSource === selectedSource;
+      
+      let matchesLevel = true;
+      if (selectedLevel !== "all") {
+        if (selectedLevel === "special") {
+          matchesLevel = p.isSpecial;
+        } else {
+          matchesLevel = !p.isSpecial && p.currentTier.level === parseInt(selectedLevel);
+        }
+      }
+
+      return matchesWord && matchesPageAsp && matchesLevel && matchesSource;
     });
-  }, [partnersAggregated, searchWord, selectedAsp]);
+  }, [partnersAggregated, searchWord, selectedAsp, selectedLevel, selectedSource]);
 
   const currentPartner = useMemo(() => {
     if (searchedPartners.length === 0) return null;
@@ -234,14 +327,41 @@ export default function VLHPartnersPage() {
             <span className="text-sm font-black tracking-wider">パートナー検索</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-            <select 
-              value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
-            >
-              <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
-            </select>
+          <div className="space-y-2 mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+            {/* 👑 フィルター群を3列（3要素）に美しく拡張マウント！ */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-2">
+              <div className="flex items-center gap-2">
+                <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                <select 
+                  value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
+                >
+                  <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Crown size={12} className="text-indigo-500 flex-shrink-0" />
+                <select 
+                  value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
+                >
+                  <option value="all">すべての設定レベル</option>
+                  {TOKUTAN_MASTER_TABLE.map(t => (<option key={t.level} value={t.level.toString()}>レベル {t.level}</option>))}
+                  <option value="special">特殊（個別契約）</option>
+                </select>
+              </div>
+              {/* 👑 新設：集客経路のクロスフィルター */}
+              <div className="flex items-center gap-2">
+                <Route size={12} className="text-emerald-500 flex-shrink-0" />
+                <select 
+                  value={selectedSource} onChange={(e) => setSelectedSource(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-emerald-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
+                >
+                  <option value="all">すべての集客経路</option>
+                  {TRAFFIC_SOURCES.map(s => (<option key={s.value} value={s.value}>{s.label}</option>))}
+                </select>
+              </div>
+            </div>
           </div>
           
           <input type="text" placeholder="メディア名・IDを入力..." value={searchWord} onChange={(e) => setSearchWord(e.target.value)} className="px-4 py-2.5 rounded-xl text-xs w-full border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-bold" />
@@ -251,7 +371,20 @@ export default function VLHPartnersPage() {
               const isSelected = currentPartner && currentPartner.name === partner.name;
               return (
                 <div key={idx} onClick={() => setSelectedPartnerName(partner.name)} className={`p-3.5 rounded-xl cursor-pointer transition-all flex flex-col gap-1 border ${isSelected ? "bg-indigo-600 border-indigo-600 text-white shadow-sm font-black" : "bg-slate-50 hover:bg-slate-100 border-slate-200/50 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-950 dark:hover:text-slate-100"}`}>
-                  <p className="text-xs md:text-sm truncate font-black">{partner.name}</p>
+                  <div className="flex justify-between items-center gap-2">
+                    <p className="text-xs md:text-sm truncate font-black flex-1">{partner.name}</p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-black flex-shrink-0 transition-all ${getLevelBadgeClass(partner.currentTier.level, partner.isSpecial)}`}>
+                      {partner.isSpecial ? "特殊" : `Lv.${partner.currentTier.level}`}
+                    </span>
+                  </div>
+                  {/* 👑 パートナーリスト内にも、集客経路ラベルを小さく表示 */}
+                  <div className="flex items-center gap-2 mb-1">
+                     {partner.trafficSource !== "未設定" && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                          {partner.trafficSource}
+                        </span>
+                     )}
+                  </div>
                   <div className="flex justify-between items-center text-[10px] font-bold opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">ID: {partner.idList}</span>
                     <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}><span className="text-[9px] text-slate-400 mr-0.5">￥</span>{Math.round(partner.revenue).toLocaleString()}</span>
@@ -268,7 +401,29 @@ export default function VLHPartnersPage() {
             <>
               <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
                 <div>
-                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">選択中のパートナー</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">選択中のパートナー</span>
+                    
+                    {/* 👑 ラベル全体を巨大なリンクボタン化する神UXバッジを完全マウント！ */}
+                    {currentPartner.trafficSource !== "未設定" && (
+                      currentPartner.trafficSourceUrl ? (
+                        <a 
+                          href={currentPartner.trafficSourceUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          title="登録URLへ直行"
+                          className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:shadow"
+                        >
+                          {currentPartner.trafficSource}
+                          <ExternalLink size={10} className="mb-[1px] opacity-80" />
+                        </a>
+                      ) : (
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
+                          {currentPartner.trafficSource}
+                        </span>
+                      )
+                    )}
+                  </div>
                   <h2 className="text-xl font-black tracking-tight mt-2 text-slate-900 dark:text-slate-50">{currentPartner.name}</h2>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1 font-bold">紐付け登録ID群: {currentPartner.idList}</p>
                 </div>
