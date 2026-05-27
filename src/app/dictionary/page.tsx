@@ -9,12 +9,20 @@ import {
 
 // 👑 横文字を完全パージした業務用日本語の集客経路マスター定義
 const TRAFFIC_SOURCES = [
-  { value: "ブログ（SERP）", label: "ブログ（SERP）" },
-  { value: "YouTube",         label: "YouTube" },
-  { value: "Instagram",       label: "Instagram" },
-  { value: "TikTok",          label: "TikTok" },
-  { value: "X（旧Twitter）",  label: "X（旧Twitter）" },
-  { value: "その他",          label: "その他" }
+  { value: "ウェブサイト（SERP）", label: "ウェブサイト（SERP）" },
+  { value: "検索広告（SERP）", label: "検索広告（SERP）" },
+  { value: "ディスプレイ広告", label: "ディスプレイ広告" },
+  { value: "ネイティブ広告", label: "ネイティブ広告" },
+  { value: "アプリ", label: "アプリ" },
+  { value: "YouTube", label: "YouTube" },
+  { value: "Facebook", label: "Facebook" },
+  { value: "Instagram", label: "Instagram" },
+  { value: "TikTok", label: "TikTok" },
+  { value: "X（旧Twitter）", label: "X（旧Twitter）" },
+  { value: "LINE", label: "LINE" },
+  { value: "Pinterest", label: "Pinterest" },
+  { value: "ライブコマース", label: "ライブコマース" },
+  { value: "その他", label: "その他" }
 ];
 
 export default function VLHDictionaryPage() {
