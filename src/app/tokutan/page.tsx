@@ -5,8 +5,26 @@ import { ThemeContext } from "../layout";
 import { 
   Crown, ArrowUp, ArrowRight, ShieldAlert, Award, 
   Search, Filter, Percent, Flame, Target, DollarSign, MessageSquare, BrainCircuit,
-  ExternalLink, Loader2
+  ExternalLink, Loader2, Route
 } from "lucide-react";
+
+// 👑 マスタ画面と完全同期した、アローエイト様準拠の集客経路マスター配列
+const TRAFFIC_SOURCES = [
+  { value: "ウェブサイト（SERP）", label: "ウェブサイト（SERP）" },
+  { value: "検索広告（SERP）",     label: "検索広告（SERP）" },
+  { value: "ディスプレイ広告",     label: "ディスプレイ広告" },
+  { value: "ネイティブ広告",       label: "ネイティブ広告" },
+  { value: "アプリ",               label: "アプリ" },
+  { value: "YouTube",              label: "YouTube" },
+  { value: "Facebook",             label: "Facebook" },
+  { value: "Instagram",            label: "Instagram" },
+  { value: "TikTok",               label: "TikTok" },
+  { value: "X（旧Twitter）",       label: "X（旧Twitter）" },
+  { value: "LINE",                 label: "LINE" },
+  { value: "Pinterest",            label: "Pinterest" },
+  { value: "ライブコマース",       label: "ライブコマース" },
+  { value: "その他",               label: "その他" }
+];
 
 const TokutanKPICard = ({ title, value, prefix, suffix, icon: Icon, colorClass }: any) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-sm rounded-2xl p-5 flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300 overflow-hidden min-h-[135px]">
@@ -27,10 +45,10 @@ const TOKUTAN_MASTER_TABLE = [
   { level: 2, name: "レベル2",        minCV: 11,  maxCV: 20,   gross: 17600, net: 14300 },
   { level: 3, name: "レベル3",        minCV: 21,  maxCV: 30,   gross: 19250, net: 15400 },
   { level: 4, name: "レベル4",        minCV: 31,  maxCV: 50,   gross: 20900, net: 16500 },
-  { level: 5, name: "レベル5",        minCV: 51,  maxCV: 100, gross: 22550, net: 17600 },
-  { level: 6, name: "レベル6",        minCV: 101, maxCV: 200, gross: 24200, net: 19800 },
-  { level: 7, name: "レベル7",        minCV: 201, maxCV: 300, gross: 25850, net: 22000 },
-  { level: 8, name: "レベル8（上限）", minCV: 301, maxCV: 9999,gross: 29150, net: 24200 },
+  { level: 5, name: "レベル5",        minCV: 51,  maxCV: 100,  gross: 22550, net: 17600 },
+  { level: 6, name: "レベル6",        minCV: 101, maxCV: 200,  gross: 24200, net: 19800 },
+  { level: 7, name: "レベル7",        minCV: 201, maxCV: 300,  gross: 25850, net: 22000 },
+  { level: 8, name: "レベル8（上限）", minCV: 301, maxCV: 9999, gross: 29150, net: 24200 },
 ];
 
 const getLevelBadgeClass = (level: number, isSpecial: boolean) => {
@@ -59,6 +77,8 @@ export default function VLHTokutanPage() {
   const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
+  const [selectedSource, setSelectedSource] = useState<string>("all"); // 👑 新設：集客経路のフィルター状態
+
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
   const [aiAdvice, setAiAdvice] = useState<string>("");
@@ -75,7 +95,7 @@ export default function VLHTokutanPage() {
         const perfRes = await fetch("/api/performance", { cache: "no-store" });
         const perfData = perfRes.ok ? await perfRes.json() : [];
         
-        const dictRes = await fetch("/api/dictionary", { cache: "no-store" });
+        const dictRes = await fetch(`/api/dictionary?t=${Date.now()}`, { cache: "no-store" });
         const dictionary = dictRes.ok ? await dictRes.json() : { master_partners: [] };
 
         setPerformanceData(perfData);
@@ -102,6 +122,7 @@ export default function VLHTokutanPage() {
       if (!rawName || rawName === "日別レポート") return;
 
       let finalName = rawName;
+      // 👑 マスタ突合時に、集客経路のラベルも確実に抽出・保持！
       const match = dictData.master_partners?.find((entry: any) => 
         entry.aliases?.includes(rawName) || entry.aliases?.includes(rawId)
       );
@@ -113,7 +134,9 @@ export default function VLHTokutanPage() {
         map[finalName] = { 
           name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, 
           ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", 
-          hasValidUnit: false, backlogIssueKey: match?.backlog_issue_key || "" 
+          hasValidUnit: false, backlogIssueKey: match?.backlog_issue_key || "",
+          trafficSource: match?.traffic_source || "未設定", // 👑 集客経路データをオブジェクトにマウント
+          trafficSourceUrl: match?.traffic_source_url || "" 
         };
       }
 
@@ -159,7 +182,6 @@ export default function VLHTokutanPage() {
           isSpecial = true;
         } else {
           const found = TOKUTAN_MASTER_TABLE.find(t => Math.abs(t.gross - unitGross) <= 10);
-
           if (found) {
             detectedLevel = found.level;
           } else {
@@ -176,17 +198,22 @@ export default function VLHTokutanPage() {
 
       const partnerProfit = p.normalized_net;
       const aspProfit = p.normalized_gross - p.normalized_net;
-
       const mainAsp = Object.keys(p.asps).join(" / ");
 
-      return { ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey };
+      return { 
+        ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, 
+        totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey,
+        trafficSource: p.trafficSource, trafficSourceUrl: p.trafficSourceUrl // 👑 完全継承
+      };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
+  // 👑 新たなるクロスフィルター（集客経路）を完全配線！
   const filteredPartners = useMemo(() => {
     return partnersWithEvaluations.filter(p => {
       const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || p.idList.toLowerCase().includes(searchWord.toLowerCase());
       const matchesAsp = selectedAsp === "all" || Object.keys(p.asps || {}).includes(selectedAsp);
+      const matchesSource = selectedSource === "all" || p.trafficSource === selectedSource;
       
       let matchesLevel = true;
       if (selectedLevel !== "all") {
@@ -196,9 +223,9 @@ export default function VLHTokutanPage() {
           matchesLevel = !p.isSpecial && p.currentTier.level === parseInt(selectedLevel);
         }
       }
-      return matchesWord && matchesAsp && matchesLevel;
+      return matchesWord && matchesAsp && matchesLevel && matchesSource;
     });
-  }, [partnersWithEvaluations, searchWord, selectedAsp, selectedLevel]);
+  }, [partnersWithEvaluations, searchWord, selectedAsp, selectedLevel, selectedSource]);
 
   const currentPartner = useMemo(() => {
     if (filteredPartners.length === 0) return null;
@@ -254,7 +281,6 @@ export default function VLHTokutanPage() {
       });
   };
 
-  // 👑 投稿関数へ aiAdvice パラメーターを完全に引き渡すように超絶強化！！！
   const handlePostBacklogComment = async (actionType: 'pricing' | 'exposure' | 'ai_insight', customAdvice?: string) => {
     if (!currentPartner || !currentPartner.backlogIssueKey) return;
     try {
@@ -271,7 +297,7 @@ export default function VLHTokutanPage() {
           cv: currentPartner.cv,
           gross: currentPartner.normalized_gross,
           net: currentPartner.partnerProfit,
-          aiAdvice: customAdvice || "" // 👑 ユーザーの天才的閃きであるアドバイステキストを抱かせて射出！！！
+          aiAdvice: customAdvice || ""
         })
       });
       const data = await res.json();
@@ -299,6 +325,7 @@ export default function VLHTokutanPage() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        {/* 左翼：フィルター ＆ パートナー一覧 */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
           <div className="flex items-center gap-2">
             <Search size={16} className="text-indigo-500" />
@@ -306,25 +333,39 @@ export default function VLHTokutanPage() {
           </div>
 
           <div className="space-y-2 mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-            <div className="flex items-center gap-2">
-              <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-              <select 
-                value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
-              >
-                <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Crown size={12} className="text-indigo-500 flex-shrink-0" />
-              <select 
-                value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
-              >
-                <option value="all">すべての設定レベル</option>
-                {TOKUTAN_MASTER_TABLE.map(t => (<option key={t.level} value={t.level.toString()}>レベル {t.level}</option>))}
-                <option value="special">特殊（個別契約）</option>
-              </select>
+            {/* 👑 フィルター群を3列（3要素）に美しく拡張マウント！ */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-2">
+              <div className="flex items-center gap-2">
+                <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                <select 
+                  value={selectedAsp} onChange={(e) => setSelectedAsp(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
+                >
+                  <option value="all">すべてのASP</option><option value="A8.net">A8.net</option><option value="afb">afb</option><option value="AccessTrade">AccessTrade</option><option value="felmat">felmat</option><option value="もしもアフィリエイト">もしもアフィリエイト</option><option value="QUORIZa">QUORIZa</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Crown size={12} className="text-indigo-500 flex-shrink-0" />
+                <select 
+                  value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
+                >
+                  <option value="all">すべての設定レベル</option>
+                  {TOKUTAN_MASTER_TABLE.map(t => (<option key={t.level} value={t.level.toString()}>レベル {t.level}</option>))}
+                  <option value="special">特殊（個別契約）</option>
+                </select>
+              </div>
+              {/* 👑 新設：集客経路のクロスフィルター */}
+              <div className="flex items-center gap-2">
+                <Route size={12} className="text-emerald-500 flex-shrink-0" />
+                <select 
+                  value={selectedSource} onChange={(e) => setSelectedSource(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-black border focus:outline-none focus:border-emerald-500 bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200"
+                >
+                  <option value="all">すべての集客経路</option>
+                  {TRAFFIC_SOURCES.map(s => (<option key={s.value} value={s.value}>{s.label}</option>))}
+                </select>
+              </div>
             </div>
           </div>
           
@@ -341,6 +382,14 @@ export default function VLHTokutanPage() {
                       {partner.isSpecial ? "特殊" : `Lv.${partner.currentTier.level}`}
                     </span>
                   </div>
+                  {/* 👑 パートナーリスト内にも、集客経路ラベルを小さく表示 */}
+                  <div className="flex items-center gap-2 mb-1">
+                     {partner.trafficSource !== "未設定" && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                          {partner.trafficSource}
+                        </span>
+                     )}
+                  </div>
                   <div className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-[10px] opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">当月成果: {partner.cv} 件</span>
                     <span className={isSelected ? "text-white/90" : "text-indigo-600 dark:text-indigo-400 ml-2 flex-shrink-0"}><span className="text-[9px] text-slate-400 mr-0.5">￥</span>{Math.round(partner.totalRevenue).toLocaleString()}</span>
@@ -352,12 +401,26 @@ export default function VLHTokutanPage() {
           </div>
         </div>
 
+        {/* 右翼：個別分析ダッシュボード */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
               <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 items-center transition-all">
                 <div>
-                  <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">特別単価判定</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">特別単価判定</span>
+                    {/* 👑 経路カテゴリと、URLがあれば直行リンクアイコンをドッキング！ */}
+                    {currentPartner.trafficSource !== "未設定" && (
+                      <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
+                        {currentPartner.trafficSource}
+                        {currentPartner.trafficSourceUrl && (
+                          <a href={currentPartner.trafficSourceUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-emerald-600 hover:text-emerald-400" title="登録URLへ直行">
+                            <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </span>
+                    )}
+                  </div>
                   <h2 className="text-xl font-black mt-2 text-slate-900 dark:text-slate-50">{currentPartner.name}</h2>
                   
                   <div className="mt-4 flex items-center gap-3">
@@ -375,7 +438,6 @@ export default function VLHTokutanPage() {
                     </div>
                   </div>
 
-                  {/* 複数スレッドバッジリンク */}
                   <div className="mt-5 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800/60 space-y-3">
                     <div className="flex flex-wrap gap-1.5 items-center">
                       <span className="text-[10px] font-black text-slate-400 mr-1 select-none">対応Backlogスレッド:</span>
@@ -422,14 +484,11 @@ export default function VLHTokutanPage() {
                             </button>
                           </>
                         )}
-
-                        {/* 下段のAI投函ユニット以外からの通知成功ステート */}
                         {backlogStatus === 'success' && !aiAdvice && (
                           <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200 select-none">
                             最新チケットへ投函完了！
                           </span>
                         )}
-
                         {backlogStatus === 'error' && !aiAdvice && (
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-black text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1" title={backlogError}>
@@ -460,8 +519,6 @@ export default function VLHTokutanPage() {
                       ) : (
                         <>
                           <p className="text-xs md:text-sm font-black leading-relaxed text-slate-800 dark:text-slate-200">{aiAdvice ? `「 ${aiAdvice} 」` : "「 右上の『AI分析を実行』ボタンを押すと、現在のデータに基づく掲載交渉アイデアを生成します。 」"}</p>
-                          
-                          {/* 👑 最高司令官の神提案：生成された極上AIテキストをそのままBacklog最新スレッドに一撃叩き込むボタンをマウント！！！ */}
                           {aiAdvice && currentPartner.backlogIssueKey && (
                             <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
                               {backlogStatus === null && (
@@ -474,13 +531,11 @@ export default function VLHTokutanPage() {
                                   この分析内容をBacklogへ送信
                                 </button>
                               )}
-
                               {backlogStatus === 'success' && (
                                 <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200 select-none">
                                   最新チケットへ投函完了！
                                 </span>
                               )}
-
                               {backlogStatus === 'error' && (
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-xs font-black text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1" title={backlogError}>
@@ -498,7 +553,6 @@ export default function VLHTokutanPage() {
                 </div>
               </div>
 
-              {/* 当月成果・報酬内訳 */}
               <div className="space-y-2">
                 <div className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase border-l-4 border-indigo-500 pl-2">■ 当月成果・報酬内訳（税込）</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -509,7 +563,6 @@ export default function VLHTokutanPage() {
                 </div>
               </div>
 
-              {/* ケノン特別単価基準表 */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 overflow-hidden shadow-sm transition-all">
                 <h3 className="text-xs font-black mb-5 flex items-center gap-2 uppercase tracking-wider text-slate-900 dark:text-slate-50">
                   <Filter size={14} className="text-indigo-500" /> ケノン特別単価基準表
