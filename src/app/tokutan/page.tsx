@@ -66,28 +66,28 @@ const getLevelBadgeClass = (level: number, isSpecial: boolean) => {
   }
 };
 
-// 👑 絶対安全防衛網：過去のデータを新次元のインスタンス配列構造へ救済
+// 👑 【絶対安全防衛網】過去の古い形式のデータを、新次元のインスタンス配列構造へリアルタイム自動救済する関数
 const ensureInstances = (partner: any) => {
   if (partner.traffic_instances && Array.isArray(partner.traffic_instances)) {
     return partner.traffic_instances;
   }
-  const 救済配列: any[] = [];
-  const oldSources = val => {
-    if (!val) return [];
-    if (Array.isArray(val)) return val;
-    return [val];
-  }(partner.traffic_source);
+  
+  const rescuedInstances: any[] = [];
+  const rawSource = partner.traffic_source;
+  
+  // 👑 構文エラーを起こした即時実行関数をパージし、安全でクリーンな三項演算子へ変更！
+  const oldSources = !rawSource ? [] : (Array.isArray(rawSource) ? rawSource : [rawSource]);
   const oldUrls = partner.traffic_source_url ? partner.traffic_source_url.split(",").map((s: string) => s.trim()) : [];
   
   oldSources.forEach((source: string, idx: number) => {
-    救済配列.push({
-      id: `saved-old-${idx}-${Date.now()}`,
+    rescuedInstances.push({
+      id: `saved-old-${idx}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       source: source,
-      instance_name: `${source}`,
+      instance_name: `${source} ${idx + 1}`,
       url: oldUrls[idx] || ""
     });
   });
-  return 救済配列;
+  return rescuedInstances;
 };
 
 export default function VLHTokutanPage() {

@@ -37,31 +37,28 @@ export default function VLHDictionaryPage() {
   // 👑 パートナー毎の「新規インスタンス入力フォーム」の状態を管理する一時的なローカルステート
   const [formInputs, setFormInputs] = useState<{ [key: number]: { source: string, name: string, url: string } }>({});
 
-  // 👑 【絶対安全防衛網】過去の古い形式のデータを、新次元のインスタンス配列構造へリアルタイム自動救済マイグレーションする関数
+  // 👑 【絶対安全防衛網】過去の古い形式のデータを、新次元のインスタンス配列構造へリアルタイム自動救済する関数
   const ensureInstances = (partner: any) => {
     if (partner.traffic_instances && Array.isArray(partner.traffic_instances)) {
       return partner.traffic_instances;
     }
     
-    // 過去データ（旧互換）のサルベージ処理
-    const救済配列: any[] = [];
-    const oldSources = val => {
-      if (!val) return [];
-      if (Array.isArray(val)) return val;
-      return [val];
-    }(partner.traffic_source);
+    const rescuedInstances: any[] = [];
+    const rawSource = partner.traffic_source;
     
+    // 👑 構文エラーを起こした即時実行関数をパージし、安全でクリーンな三項演算子へ変更！
+    const oldSources = !rawSource ? [] : (Array.isArray(rawSource) ? rawSource : [rawSource]);
     const oldUrls = partner.traffic_source_url ? partner.traffic_source_url.split(",").map((s: string) => s.trim()) : [];
     
     oldSources.forEach((source: string, idx: number) => {
-      救済配列.push({
+      rescuedInstances.push({
         id: `saved-old-${idx}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         source: source,
-        instance_name: `${source} ${idx + 1}`, // 例：Instagram 1
+        instance_name: `${source} ${idx + 1}`,
         url: oldUrls[idx] || ""
       });
     });
-    return 救済配列;
+    return rescuedInstances;
   };
 
   useEffect(() => {
