@@ -66,11 +66,28 @@ const getLevelBadgeClass = (level: number, isSpecial: boolean) => {
   }
 };
 
-// 👑 安全装置：APIから飛んできた集客経路データを必ず配列に変換する
-const ensureArray = (val: any) => {
-  if (!val) return [];
-  if (Array.isArray(val)) return val;
-  return [val];
+// 👑 絶対安全防衛網：過去のデータを新次元のインスタンス配列構造へ救済
+const ensureInstances = (partner: any) => {
+  if (partner.traffic_instances && Array.isArray(partner.traffic_instances)) {
+    return partner.traffic_instances;
+  }
+  const 救済配列: any[] = [];
+  const oldSources = val => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    return [val];
+  }(partner.traffic_source);
+  const oldUrls = partner.traffic_source_url ? partner.traffic_source_url.split(",").map((s: string) => s.trim()) : [];
+  
+  oldSources.forEach((source: string, idx: number) => {
+    救済配列.push({
+      id: `saved-old-${idx}-${Date.now()}`,
+      source: source,
+      instance_name: `${source}`,
+      url: oldUrls[idx] || ""
+    });
+  });
+  return 救済配列;
 };
 
 export default function VLHTokutanPage() {
@@ -141,8 +158,7 @@ export default function VLHTokutanPage() {
           name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, 
           ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", 
           hasValidUnit: false, backlogIssueKey: match?.backlog_issue_key || "",
-          trafficSources: ensureArray(match?.traffic_source), // 👑 配列としてマウント
-          trafficSourceUrls: ensureArray(match?.traffic_source_url ? match.traffic_source_url.split(",").map((s:string) => s.trim()) : []) // 👑 URLもカンマ区切りで配列化
+          trafficInstances: ensureInstances(match || {}) // 👑 多層インスタンス配列として完全マウント
         };
       }
 
@@ -209,7 +225,7 @@ export default function VLHTokutanPage() {
       return { 
         ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, 
         totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey,
-        trafficSources: p.trafficSources, trafficSourceUrls: p.trafficSourceUrls // 👑 完全継承
+        trafficInstances: p.trafficInstances // 👑 完全継承
       };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
@@ -219,8 +235,8 @@ export default function VLHTokutanPage() {
       const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || p.idList.toLowerCase().includes(searchWord.toLowerCase());
       const matchesAsp = selectedAsp === "all" || Object.keys(p.asps || {}).includes(selectedAsp);
       
-      // 👑 【究極の進化】配列に対する包含判定（includes）で、マルチチャネルの取りこぼしを完全消滅！！！
-      const matchesSource = selectedSource === "all" || p.trafficSources.includes(selectedSource);
+      // 👑 【真・マルチ抽出】インスタンス群の中に、選択された「大分類ソース（例：Instagram）」が1つでも含まれていればヒット！
+      const matchesSource = selectedSource === "all" || p.trafficInstances.some((inst: any) => inst.source === selectedSource);
       
       let matchesLevel = true;
       if (selectedLevel !== "all") {
@@ -386,11 +402,12 @@ export default function VLHTokutanPage() {
                       {partner.isSpecial ? "特殊" : `Lv.${partner.currentTier.level}`}
                     </span>
                   </div>
-                  {/* 👑 リスト内でも、複数の集客経路ラベルを横に綺麗に並べる */}
+                  {/* 👑 リスト内でも、インスタンス名（識別名）を美しく表示 */}
                   <div className="flex items-center flex-wrap gap-1 mb-1">
-                     {partner.trafficSources.map((source: string, sIdx: number) => (
-                        <span key={sIdx} className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
-                          {source}
+                     {partner.trafficInstances.map((inst: any) => (
+                        <span key={inst.id} className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${isSelected ? "bg-white/20 text-white border-white/10" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"} flex items-center gap-1`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-emerald-500"}`}></span>
+                          {inst.instance_name}
                         </span>
                      ))}
                   </div>
@@ -413,27 +430,26 @@ export default function VLHTokutanPage() {
                   <div className="flex items-center flex-wrap gap-2">
                     <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">特別単価判定</span>
                     
-                    {/* 👑 配列化された複数の経路バッジとURLをすべて横並びにマウント！！！ */}
-                    {currentPartner.trafficSources.map((source: string, idx: number) => {
-                      const url = currentPartner.trafficSourceUrls[idx] || null;
-                      if (url) {
+                    {/* 👑 多層化されたインスタンスを、識別名バッジ＆直行リンクとしてすべて美しく並列展開！！！ */}
+                    {currentPartner.trafficInstances.map((inst: any) => {
+                      if (inst.url) {
                         return (
                           <a 
-                            key={idx}
-                            href={url} 
+                            key={inst.id}
+                            href={inst.url} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            title={`${source}へ直行`}
+                            title={`${inst.instance_name}へ直行`}
                             className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:shadow"
                           >
-                            {source}
+                            {inst.instance_name}
                             <ExternalLink size={10} className="mb-[1px] opacity-80" />
                           </a>
                         );
                       }
                       return (
-                        <span key={idx} className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
-                          {source}
+                        <span key={inst.id} className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
+                          {inst.instance_name}
                         </span>
                       );
                     })}

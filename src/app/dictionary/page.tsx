@@ -34,11 +34,34 @@ export default function VLHDictionaryPage() {
   const [loading, setLoading] = useState<boolean>(true); 
   const [status, setStatus] = useState<{ type: 'success'|'error'|null, msg: string }>({ type: null, msg: "" });
 
-  // 👑 【安全装置】過去の「単一文字列」データを「配列」に自動変換してクラッシュを防ぐ関数
-  const ensureArray = (val: any) => {
-    if (!val) return [];
-    if (Array.isArray(val)) return val;
-    return [val]; // 古いデータ（文字列）が入っていたら配列で包む
+  // 👑 パートナー毎の「新規インスタンス入力フォーム」の状態を管理する一時的なローカルステート
+  const [formInputs, setFormInputs] = useState<{ [key: number]: { source: string, name: string, url: string } }>({});
+
+  // 👑 【絶対安全防衛網】過去の古い形式のデータを、新次元のインスタンス配列構造へリアルタイム自動救済マイグレーションする関数
+  const ensureInstances = (partner: any) => {
+    if (partner.traffic_instances && Array.isArray(partner.traffic_instances)) {
+      return partner.traffic_instances;
+    }
+    
+    // 過去データ（旧互換）のサルベージ処理
+    const救済配列: any[] = [];
+    const oldSources = val => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      return [val];
+    }(partner.traffic_source);
+    
+    const oldUrls = partner.traffic_source_url ? partner.traffic_source_url.split(",").map((s: string) => s.trim()) : [];
+    
+    oldSources.forEach((source: string, idx: number) => {
+      救済配列.push({
+        id: `saved-old-${idx}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        source: source,
+        instance_name: `${source} ${idx + 1}`, // 例：Instagram 1
+        url: oldUrls[idx] || ""
+      });
+    });
+    return 救済配列;
   };
 
   useEffect(() => {
@@ -80,8 +103,8 @@ export default function VLHDictionaryPage() {
     const updated = {
       ...dictionary,
       master_partners: [
-        // 👑 traffic_source を初期から「空の配列」としてマウント！
-        { real_name: newMasterName, aliases: [], backlog_issue_key: "", traffic_source: [], traffic_source_url: "" },
+        // 👑 traffic_instances を空の初期配列として新規マウント！
+        { real_name: newMasterName, aliases: [], backlog_issue_key: "", traffic_instances: [], traffic_source_url: "" },
         ...dictionary.master_partners
       ]
     };
@@ -113,20 +136,53 @@ export default function VLHDictionaryPage() {
     handleSave(updated);
   };
 
-  // 👑 新設：集客経路のタグをクリックした際に、配列への追加/削除をトグル（切り替え）する関数
-  const toggleTrafficSource = (masterIdx: number, sourceValue: string) => {
+  // 👑 新設：特定のパートナーに新しく「識別名＋URL」の集客経路インスタンスを追加する関数
+  const addTrafficInstance = (masterIdx: number) => {
+    const input = formInputs[masterIdx];
+    if (!input || !input.source || !input.name) return;
+
     const updated = { ...dictionary };
-    const targetMaster = updated.master_partners[masterIdx];
-    const currentSources = ensureArray(targetMaster.traffic_source);
+    const targetPartner = updated.master_partners[masterIdx];
     
-    if (currentSources.includes(sourceValue)) {
-      // 既に選択されていればパージ（削除）
-      targetMaster.traffic_source = currentSources.filter((s: string) => s !== sourceValue);
-    } else {
-      // 選択されていなければ追加
-      targetMaster.traffic_source = [...currentSources, sourceValue];
-    }
+    // 現在のインスタンス群を救済回路経由で安全取得
+    const currentInstances = [...ensureInstances(targetPartner)];
     
+    const newInstance = {
+      id: `instance-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      source: input.source,
+      instance_name: input.name,
+      url: input.url.trim()
+    };
+
+    targetPartner.traffic_instances = [newInstance, ...currentInstances];
+    
+    // 同期のために旧互換フィールドも配列ベースで自動文字列変換して裏補完（分断の完全防衛ファクト）
+    targetPartner.traffic_source = targetPartner.traffic_instances.map((i: any) => i.source);
+    targetPartner.traffic_source_url = targetPartner.traffic_instances.map((i: any) => i.url).join(", ");
+
+    setDictionary(updated);
+    
+    // 入力フォームのクリア
+    setFormInputs({
+      ...formInputs,
+      [masterIdx]: { source: "", name: "", url: "" }
+    });
+
+    handleSave(updated);
+  };
+
+  // 👑 新設：特定の集客経路インスタンス（識別名ペア）をピンポイントで破棄する関数
+  const removeTrafficInstance = (masterIdx: number, instanceId: string) => {
+    const updated = { ...dictionary };
+    const targetPartner = updated.master_partners[masterIdx];
+    const currentInstances = ensureInstances(targetPartner);
+
+    targetPartner.traffic_instances = currentInstances.filter((i: any) => i.id !== instanceId);
+    
+    // 裏側の旧互換フィールドも超精密に自動同期再生成
+    targetPartner.traffic_source = targetPartner.traffic_instances.map((i: any) => i.source);
+    targetPartner.traffic_source_url = targetPartner.traffic_instances.map((i: any) => i.url).join(", ");
+
     setDictionary(updated);
     handleSave(updated);
   };
@@ -152,6 +208,7 @@ export default function VLHDictionaryPage() {
 
   return (
     <div className="w-full space-y-5 text-slate-900 dark:text-slate-50">
+      {/* 👑 規律に則り、全角9文字の「パートナー統合設定」タイトルを完全維持 */}
       <header className="hidden md:flex px-8 py-5 rounded-2xl flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
         <h1 className="text-xl font-black tracking-tight">パートナー統合設定</h1>
         {status.type && (
@@ -213,9 +270,13 @@ export default function VLHDictionaryPage() {
           ) : (
             dictionary.master_partners.map((master: any, mIdx: number) => {
               const linkedIssues = parseBacklogKeys(master.backlog_issue_key);
-              // 安全装置で配列化
-              const currentTrafficSources = ensureArray(master.traffic_source);
               
+              // 👑 安全装置マイグレーション網を通過させてインスタンス配列を取得
+              const currentInstances = ensureInstances(master);
+              
+              // 対象行のインライン入力用フォームの現在の状態を取得
+              const currentForm = formInputs[mIdx] || { source: "", name: "", url: "" };
+
               return (
                 <div key={mIdx} className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] shadow-sm group transition-all space-y-5">
                   <div className="flex justify-between items-start">
@@ -306,70 +367,115 @@ export default function VLHDictionaryPage() {
                       </div>
                     </div>
 
-                    {/* 👑 複数選択を可能にする「タグトグルUI」 ＆ URL入力の縦積みレイアウト */}
-                    <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800/60">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 flex items-center gap-1">
-                          <Route size={12} className="text-emerald-500" />
-                          マルチチャネル集客経路の指定（複数選択可）
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {TRAFFIC_SOURCES.map((source) => {
-                            const isSelected = currentTrafficSources.includes(source.value);
-                            return (
-                              <button
-                                key={source.value}
-                                onClick={() => toggleTrafficSource(mIdx, source.value)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all border shadow-sm ${
-                                  isSelected 
-                                    ? "bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600" 
-                                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:border-slate-600"
-                                }`}
-                              >
-                                {source.label}
-                              </button>
-                            );
+                    {/* 👑 【新次元】「大分類×識別名×URL」ペア管理用・動的インライン追加コックピット */}
+                    <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                      <label className="text-[10px] font-black text-slate-400 flex items-center gap-1 select-none">
+                        <Route size={12} className="text-emerald-500" />
+                        個別アカウント（インスタンス）の新規紐付け
+                      </label>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                        {/* 1. カテゴリ大分類 */}
+                        <select
+                          value={currentForm.source}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormInputs({
+                              ...formInputs,
+                              [mIdx]: { ...currentForm, source: val, name: val ? `${val} 1` : "" } // カテゴリを選んだら初期識別名を自動補完
+                            });
+                          }}
+                          className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:border-indigo-500 bg-white border-slate-200 text-slate-900 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-50 font-bold text-xs transition-all"
+                        >
+                          <option value="">-- カテゴリ選択 --</option>
+                          {TRAFFIC_SOURCES.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+
+                        {/* 2. 識別名（自由入力） */}
+                        <input
+                          type="text"
+                          placeholder="識別名（例：Instagram 1）"
+                          value={currentForm.name}
+                          onChange={(e) => setFormInputs({
+                            ...formInputs,
+                            [mIdx]: { ...currentForm, name: e.target.value }
                           })}
+                          className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:border-indigo-500 bg-white border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-xs transition-all"
+                        />
+
+                        {/* 3. 専用URL入力 ＆ 追加トリガー */}
+                        <div className="flex gap-2 sm:col-span-1">
+                          <input
+                            type="text"
+                            placeholder="専用URLリンク"
+                            value={currentForm.url}
+                            onChange={(e) => setFormInputs({
+                              ...formInputs,
+                              [mIdx]: { ...currentForm, url: e.target.value }
+                            })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && currentForm.source && currentForm.name) {
+                                e.preventDefault();
+                                addTrafficInstance(mIdx);
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 rounded-xl border focus:outline-none focus:border-indigo-500 bg-white border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-xs transition-all"
+                          />
+                          <button
+                            onClick={() => addTrafficInstance(mIdx)}
+                            disabled={!currentForm.source || !currentForm.name}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-xs rounded-xl shadow-sm transition-all flex-shrink-0"
+                          >
+                            追加
+                          </button>
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 block mb-1">個別URLリンクの紐付け（カンマ区切りで複数も可）</label>
-                        <div className="relative flex items-center">
-                          <input 
-                            type="text"
-                            placeholder="例：https://example.com, https://instagram.com/real_name"
-                            defaultValue={master.traffic_source_url || ""}
-                            onBlur={(e) => {
-                              const updated = { ...dictionary };
-                              updated.master_partners[mIdx].traffic_source_url = e.target.value;
-                              setDictionary(updated);
-                              handleSave(updated);
-                            }}
-                            onKeyDown={(e: any) => {
-                              if (e.key === 'Enter') {
-                                const updated = { ...dictionary };
-                                updated.master_partners[mIdx].traffic_source_url = e.target.value;
-                                setDictionary(updated);
-                                handleSave(updated);
-                                e.target.blur();
-                              }
-                            }}
-                            className="w-full px-4 py-3 pr-12 rounded-xl border focus:outline-none focus:border-indigo-500 bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-600 font-bold text-sm transition-all"
-                          />
-                          {master.traffic_source_url && (
-                            <a 
-                              href={master.traffic_source_url.split(",")[0].trim()} // カンマ区切りの場合は1つ目のURLに飛ぶ
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="1つ目の登録URLへ直接移動する"
-                              className="absolute right-3 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-indigo-400 transition-all shadow-sm"
-                            >
-                              <ExternalLink size={14} />
-                            </a>
-                          )}
+                      {/* 👑 登録済みインスタンスのグリッド・マッピングリスト（神UX仕様） */}
+                      {currentInstances.length > 0 && (
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                          {currentInstances.map((inst: any) => (
+                            <div key={inst.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-100 hover:border-slate-200 dark:bg-slate-900 dark:border-slate-800/60 dark:hover:border-slate-700/60 transition-all text-xs shadow-2xs">
+                              <div className="flex items-center gap-3 truncate flex-1">
+                                <span className="text-[10px] px-2 py-0.5 rounded-md font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10 select-none flex-shrink-0">
+                                  {inst.source}
+                                </span>
+                                <span className="font-black text-slate-700 dark:text-slate-300 truncate max-w-[150px]">
+                                  {inst.instance_name}
+                                </span>
+                                {inst.url && (
+                                  <span className="text-[10px] font-mono text-slate-400 truncate max-w-[200px] select-all">
+                                    ({inst.url})
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-1.5 ml-4">
+                                {inst.url && (
+                                  <a
+                                    href={inst.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`${inst.instance_name} の最前線（リンク先）へ1秒で直行する`}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-indigo-600 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400 dark:hover:text-indigo-400 transition-all shadow-3xs"
+                                  >
+                                    <ExternalLink size={12} />
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => removeTrafficInstance(mIdx, inst.id)}
+                                  title="このアカウント連携を解除する"
+                                  className="p-1.5 rounded-lg bg-red-500/5 text-red-400 hover:bg-red-500 hover:text-white transition-all border border-transparent hover:border-red-600"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      )}
                     </div>
 
                   </div>
