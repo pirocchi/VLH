@@ -66,6 +66,13 @@ const getLevelBadgeClass = (level: number, isSpecial: boolean) => {
   }
 };
 
+// 👑 安全装置：APIから飛んできた集客経路データを必ず配列に変換する
+const ensureArray = (val: any) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return [val];
+};
+
 export default function VLHTokutanPage() {
   const { activeTheme } = useContext(ThemeContext);
   const isLight = activeTheme === "light";
@@ -134,8 +141,8 @@ export default function VLHTokutanPage() {
           name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, 
           ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", 
           hasValidUnit: false, backlogIssueKey: match?.backlog_issue_key || "",
-          trafficSource: match?.traffic_source || "未設定", 
-          trafficSourceUrl: match?.traffic_source_url || "" 
+          trafficSources: ensureArray(match?.traffic_source), // 👑 配列としてマウント
+          trafficSourceUrls: ensureArray(match?.traffic_source_url ? match.traffic_source_url.split(",").map((s:string) => s.trim()) : []) // 👑 URLもカンマ区切りで配列化
         };
       }
 
@@ -202,7 +209,7 @@ export default function VLHTokutanPage() {
       return { 
         ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, 
         totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey,
-        trafficSource: p.trafficSource, trafficSourceUrl: p.trafficSourceUrl 
+        trafficSources: p.trafficSources, trafficSourceUrls: p.trafficSourceUrls // 👑 完全継承
       };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
@@ -211,7 +218,9 @@ export default function VLHTokutanPage() {
     return partnersWithEvaluations.filter(p => {
       const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || p.idList.toLowerCase().includes(searchWord.toLowerCase());
       const matchesAsp = selectedAsp === "all" || Object.keys(p.asps || {}).includes(selectedAsp);
-      const matchesSource = selectedSource === "all" || p.trafficSource === selectedSource;
+      
+      // 👑 【究極の進化】配列に対する包含判定（includes）で、マルチチャネルの取りこぼしを完全消滅！！！
+      const matchesSource = selectedSource === "all" || p.trafficSources.includes(selectedSource);
       
       let matchesLevel = true;
       if (selectedLevel !== "all") {
@@ -377,12 +386,13 @@ export default function VLHTokutanPage() {
                       {partner.isSpecial ? "特殊" : `Lv.${partner.currentTier.level}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mb-1">
-                     {partner.trafficSource !== "未設定" && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
-                          {partner.trafficSource}
+                  {/* 👑 リスト内でも、複数の集客経路ラベルを横に綺麗に並べる */}
+                  <div className="flex items-center flex-wrap gap-1 mb-1">
+                     {partner.trafficSources.map((source: string, sIdx: number) => (
+                        <span key={sIdx} className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                          {source}
                         </span>
-                     )}
+                     ))}
                   </div>
                   <div className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-[10px] opacity-80">
                     <span className="truncate text-slate-400 dark:text-slate-500">当月成果: {partner.cv} 件</span>
@@ -400,28 +410,33 @@ export default function VLHTokutanPage() {
             <>
               <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 items-center transition-all">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center flex-wrap gap-2">
                     <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">特別単価判定</span>
                     
-                    {/* 👑 【完全修正】バッジ全体を巨大なリンクボタン化し、クリック範囲の極小ストレスを完全粉砕！！！ */}
-                    {currentPartner.trafficSource !== "未設定" && (
-                      currentPartner.trafficSourceUrl ? (
-                        <a 
-                          href={currentPartner.trafficSourceUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          title="登録URLへ直行"
-                          className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:shadow"
-                        >
-                          {currentPartner.trafficSource}
-                          <ExternalLink size={10} className="mb-[1px] opacity-80" />
-                        </a>
-                      ) : (
-                        <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
-                          {currentPartner.trafficSource}
+                    {/* 👑 配列化された複数の経路バッジとURLをすべて横並びにマウント！！！ */}
+                    {currentPartner.trafficSources.map((source: string, idx: number) => {
+                      const url = currentPartner.trafficSourceUrls[idx] || null;
+                      if (url) {
+                        return (
+                          <a 
+                            key={idx}
+                            href={url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            title={`${source}へ直行`}
+                            className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:shadow"
+                          >
+                            {source}
+                            <ExternalLink size={10} className="mb-[1px] opacity-80" />
+                          </a>
+                        );
+                      }
+                      return (
+                        <span key={idx} className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
+                          {source}
                         </span>
-                      )
-                    )}
+                      );
+                    })}
                   </div>
                   <h2 className="text-xl font-black mt-2 text-slate-900 dark:text-slate-50">{currentPartner.name}</h2>
                   
