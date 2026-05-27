@@ -22,15 +22,15 @@ export async function GET() {
     const dictPath = getDictPath();
     const canWriteLocal = fs.existsSync(path.dirname(dictPath));
 
-    // 🏠 1. ローカル物理データのサルベージ
+    // 1. ローカル物理データのサルベージ
     let localData = null;
     let localTime = 0;
     if (canWriteLocal && fs.existsSync(dictPath)) {
       localData = JSON.parse(fs.readFileSync(dictPath, "utf-8"));
-      localTime = fs.statSync(dictPath).mtimeMs; // ミリ秒単位の更新時刻
+      localTime = fs.statSync(dictPath).mtimeMs;
     }
 
-    // 🌐 2. クラウド（Blob）データのサルベージ
+    // 2. クラウド（Blob）データのサルベージ
     let cloudData = null;
     let cloudTime = 0;
     if (token && storeId) {
@@ -39,7 +39,6 @@ export async function GET() {
       if (targetBlob) {
         cloudTime = new Date(targetBlob.uploadedAt).getTime();
         
-        // 👑 【キャッシュバスター弾】URLの末尾に時刻を付与し、古いCDNキャッシュを完全に粉砕・貫通！！！
         const res = await fetch(`${targetBlob.url}?t=${Date.now()}`, {
           cache: "no-store",
           headers: { Authorization: `Bearer ${token}` }
@@ -50,7 +49,7 @@ export async function GET() {
       }
     }
 
-    // 🛡️ 3. 【最強のスマート照合シンク】中身を比較して正しい方向へ自動修復！
+    // 3. 【スマート照合シンク】
     let finalData = { master_partners: [] };
 
     if (localData && cloudData) {
@@ -58,24 +57,38 @@ export async function GET() {
       const cloudStr = JSON.stringify(cloudData);
 
       if (localStr !== cloudStr) {
-        // 中身が違う場合のみ、新しい方から古い方へデータを同期・救済する
         if (cloudTime > localTime) {
           finalData = cloudData;
           if (canWriteLocal) fs.writeFileSync(dictPath, JSON.stringify(cloudData, null, 2), "utf-8");
         } else {
           finalData = localData;
-          if (token && storeId) await put(BLOB_FILENAME, JSON.stringify(localData, null, 2), { access: "private", addRandomSuffix: false, token, storeId });
+          // 👑 救済回路のputにも allowOverwrite: true を確実に装填！！！
+          if (token && storeId) {
+            await put(BLOB_FILENAME, JSON.stringify(localData, null, 2), { 
+              access: "private", 
+              addRandomSuffix: false, 
+              allowOverwrite: true, 
+              token, 
+              storeId 
+            });
+          }
         }
       } else {
-        // 中身が全く同じ場合は何もしない（フェイク上書きの防止）
         finalData = localData;
       }
     } else if (localData && !cloudData) {
-      // ローカルにあってクラウドに無い（クラウドが消滅した場合の自動復旧）
       finalData = localData;
-      if (token && storeId) await put(BLOB_FILENAME, JSON.stringify(localData, null, 2), { access: "private", addRandomSuffix: false, token, storeId });
+      // 👑 救済回路のputに allowOverwrite: true を確実に装填！！！
+      if (token && storeId) {
+        await put(BLOB_FILENAME, JSON.stringify(localData, null, 2), { 
+          access: "private", 
+          addRandomSuffix: false, 
+          allowOverwrite: true, 
+          token, 
+          storeId 
+        });
+      }
     } else if (!localData && cloudData) {
-      // クラウドにあってローカルに無い（PC変更時の自動復旧）
       finalData = cloudData;
       if (canWriteLocal) fs.writeFileSync(dictPath, JSON.stringify(cloudData, null, 2), "utf-8");
     }
@@ -106,7 +119,14 @@ export async function POST(request: Request) {
 
     // 🌐 トークンがあれば確実に本番クラウドへ書き込み
     if (token && storeId) {
-      await put(BLOB_FILENAME, jsonString, { access: "private", addRandomSuffix: false, token, storeId });
+      // 👑 エラーログの指示通り、allowOverwrite: true を100%完璧に装填し、上書きロックを完全粉砕！！！
+      await put(BLOB_FILENAME, jsonString, { 
+        access: "private", 
+        addRandomSuffix: false, 
+        allowOverwrite: true, 
+        token, 
+        storeId 
+      });
     }
 
     return NextResponse.json({ success: true });
