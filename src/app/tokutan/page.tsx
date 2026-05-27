@@ -77,7 +77,7 @@ export default function VLHTokutanPage() {
   const [searchWord, setSearchWord] = useState<string>("");
   const [selectedAsp, setSelectedAsp] = useState<string>("all");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
-  const [selectedSource, setSelectedSource] = useState<string>("all"); // 👑 新設：集客経路のフィルター状態
+  const [selectedSource, setSelectedSource] = useState<string>("all"); 
 
   const [selectedPartnerName, setSelectedPartnerName] = useState<string>("");
 
@@ -122,7 +122,6 @@ export default function VLHTokutanPage() {
       if (!rawName || rawName === "日別レポート") return;
 
       let finalName = rawName;
-      // 👑 マスタ突合時に、集客経路のラベルも確実に抽出・保持！
       const match = dictData.master_partners?.find((entry: any) => 
         entry.aliases?.includes(rawName) || entry.aliases?.includes(rawId)
       );
@@ -135,7 +134,7 @@ export default function VLHTokutanPage() {
           name: finalName, cv: 0, normalized_gross: 0, normalized_net: 0, 
           ids: new Set<string>(), asps: {}, detectedUnitGross: 0, detectedAsp: "", 
           hasValidUnit: false, backlogIssueKey: match?.backlog_issue_key || "",
-          trafficSource: match?.traffic_source || "未設定", // 👑 集客経路データをオブジェクトにマウント
+          trafficSource: match?.traffic_source || "未設定", 
           trafficSourceUrl: match?.traffic_source_url || "" 
         };
       }
@@ -203,12 +202,11 @@ export default function VLHTokutanPage() {
       return { 
         ...p, mainAsp, idList: Array.from(p.ids).join(", "), currentTier, isSpecial, 
         totalRevenue, partnerProfit, aspProfit, backlogIssueKey: p.backlogIssueKey,
-        trafficSource: p.trafficSource, trafficSourceUrl: p.trafficSourceUrl // 👑 完全継承
+        trafficSource: p.trafficSource, trafficSourceUrl: p.trafficSourceUrl 
       };
     }).sort((a: any, b: any) => b.cv - a.cv);
   }, [performanceData, dictData]);
 
-  // 👑 新たなるクロスフィルター（集客経路）を完全配線！
   const filteredPartners = useMemo(() => {
     return partnersWithEvaluations.filter(p => {
       const matchesWord = p.name.toLowerCase().includes(searchWord.toLowerCase()) || p.idList.toLowerCase().includes(searchWord.toLowerCase());
@@ -325,7 +323,6 @@ export default function VLHTokutanPage() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* 左翼：フィルター ＆ パートナー一覧 */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm h-fit space-y-4">
           <div className="flex items-center gap-2">
             <Search size={16} className="text-indigo-500" />
@@ -333,7 +330,6 @@ export default function VLHTokutanPage() {
           </div>
 
           <div className="space-y-2 mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-            {/* 👑 フィルター群を3列（3要素）に美しく拡張マウント！ */}
             <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-2">
               <div className="flex items-center gap-2">
                 <Filter size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
@@ -355,7 +351,6 @@ export default function VLHTokutanPage() {
                   <option value="special">特殊（個別契約）</option>
                 </select>
               </div>
-              {/* 👑 新設：集客経路のクロスフィルター */}
               <div className="flex items-center gap-2">
                 <Route size={12} className="text-emerald-500 flex-shrink-0" />
                 <select 
@@ -382,7 +377,6 @@ export default function VLHTokutanPage() {
                       {partner.isSpecial ? "特殊" : `Lv.${partner.currentTier.level}`}
                     </span>
                   </div>
-                  {/* 👑 パートナーリスト内にも、集客経路ラベルを小さく表示 */}
                   <div className="flex items-center gap-2 mb-1">
                      {partner.trafficSource !== "未設定" && (
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
@@ -401,7 +395,6 @@ export default function VLHTokutanPage() {
           </div>
         </div>
 
-        {/* 右翼：個別分析ダッシュボード */}
         <div className="xl:col-span-3 space-y-6">
           {currentPartner ? (
             <>
@@ -409,16 +402,25 @@ export default function VLHTokutanPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 tracking-wider">特別単価判定</span>
-                    {/* 👑 経路カテゴリと、URLがあれば直行リンクアイコンをドッキング！ */}
+                    
+                    {/* 👑 【完全修正】バッジ全体を巨大なリンクボタン化し、クリック範囲の極小ストレスを完全粉砕！！！ */}
                     {currentPartner.trafficSource !== "未設定" && (
-                      <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
-                        {currentPartner.trafficSource}
-                        {currentPartner.trafficSourceUrl && (
-                          <a href={currentPartner.trafficSourceUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-emerald-600 hover:text-emerald-400" title="登録URLへ直行">
-                            <ExternalLink size={10} />
-                          </a>
-                        )}
-                      </span>
+                      currentPartner.trafficSourceUrl ? (
+                        <a 
+                          href={currentPartner.trafficSourceUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          title="登録URLへ直行"
+                          className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:shadow"
+                        >
+                          {currentPartner.trafficSource}
+                          <ExternalLink size={10} className="mb-[1px] opacity-80" />
+                        </a>
+                      ) : (
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wider flex items-center gap-1">
+                          {currentPartner.trafficSource}
+                        </span>
+                      )
                     )}
                   </div>
                   <h2 className="text-xl font-black mt-2 text-slate-900 dark:text-slate-50">{currentPartner.name}</h2>
